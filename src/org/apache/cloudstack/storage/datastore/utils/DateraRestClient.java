@@ -18,6 +18,7 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -160,7 +161,99 @@ public class DateraRestClient {
   public AccessControl access;
 
  }
+ public class AdminPreviledge
+ {
+   @SerializedName("admin_state")
+   public String adminState;
+   
+   public AdminPreviledge(String paramAdminState)
+   {
+    adminState = paramAdminState;
+   }
+ }
+ 
+ public class GenericResponse
+ {
+  public String name;
+ }
+ 
+ public class VolumeResize
+ {
+	 public int size;
+	 public VolumeResize(int sz)
+	 {
+		 size = sz;
+	 }
+ }
+ 
+ public boolean setAdminState(String appInstance,boolean online)
+ {
+  boolean ret = false;
+  AdminPreviledge prev = new AdminPreviledge( online ? "online" : "offline");
+  
+  HttpPut putRequest = new HttpPut("/v2/app_instances/"+appInstance);
+  putRequest.setHeader("Content-Type","application/json");
+  putRequest.setHeader("auth-token",respLogin.getKey());
+  String payload = gson.toJson(prev);
 
+   try {
+     StringEntity params = new StringEntity(payload);
+     putRequest.setEntity(params);
+    } catch (UnsupportedEncodingException e) {
+     // TODO Auto-generated catch block
+     e.printStackTrace();
+    }
+  
+  String response = execute(putRequest);
+  GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+  return respObj.equals(appInstance) ? true : false;
+ }
+ 
+ public boolean resizeVolume(String appInstance, String storageInstance, String volumeInstance, int newSize)
+ {
+    String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s", appInstance,storageInstance,volumeInstance);
+    HttpPut putRequest = new HttpPut(restPath);
+    putRequest.setHeader("Content-Type","application/json");
+    putRequest.setHeader("auth-token",respLogin.getKey());
+    
+    VolumeResize vol = new VolumeResize(newSize);
+    String payload = gson.toJson(vol);
+    
+    try {
+    	   StringEntity params = new StringEntity(payload);
+    	   putRequest.setEntity(params);
+    	  } catch (UnsupportedEncodingException e) {
+    	   // TODO Auto-generated catch block
+    	   e.printStackTrace();
+    	  }
+     String response = execute(putRequest);
+     GenericResponse resp = gson.fromJson(response,GenericResponse.class);
+     
+	 return resp.equals(volumeInstance) ? true : false;
+ }
+ 
+ public boolean deleteAppInstance(String appInstance)
+ {
+  HttpDelete deleteRequest = new HttpDelete("/v2/app_instances/"+appInstance);
+  deleteRequest.setHeader("auth-token",respLogin.getKey());
+  String response = execute(deleteRequest);
+  
+  GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+  return respObj.equals(appInstance) ? true : false;
+ }
+ public boolean deleteVolume(String appInstance, String storageInstance, String volumeInstance)
+ {
+  boolean ret = false;
+  String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s", appInstance,storageInstance,volumeInstance);
+  
+  HttpDelete deleteRequest = new HttpDelete(restPath);
+  deleteRequest.setHeader("auth-token",respLogin.getKey());
+  String response = execute(deleteRequest);
+  
+  GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+  return respObj.equals(volumeInstance) ? true : false;
+  
+ }
  public StorageResponse getStorageInfo(String appInstance, String storageInstance)
  {
   String restPath = String.format("/v2/app_instances/%s/storage_instances/%s", appInstance,storageInstance);
