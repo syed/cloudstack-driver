@@ -25,7 +25,6 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import org.apache.log4j.Logger;
-
 import org.apache.cloudstack.engine.subsystem.api.storage.ClusterScope;
 import org.apache.cloudstack.engine.subsystem.api.storage.DataStore;
 import org.apache.cloudstack.engine.subsystem.api.storage.HostScope;
@@ -34,18 +33,24 @@ import org.apache.cloudstack.engine.subsystem.api.storage.PrimaryDataStoreParame
 import org.apache.cloudstack.engine.subsystem.api.storage.ZoneScope;
 import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
+import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
+import org.apache.cloudstack.storage.datastore.utils.DateraRestClient.StorageResponse;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.apache.cloudstack.storage.volume.datastore.PrimaryDataStoreHelper;
 
 import com.cloud.agent.api.StoragePoolInfo;
 import com.cloud.capacity.CapacityManager;
+import com.cloud.dc.ClusterDetailsDao;
 import com.cloud.dc.DataCenterVO;
+import com.cloud.dc.dao.ClusterDao;
 import com.cloud.dc.dao.DataCenterDao;
 import com.cloud.host.HostVO;
+import com.cloud.host.dao.HostDao;
 import com.cloud.hypervisor.Hypervisor.HypervisorType;
 import com.cloud.resource.ResourceManager;
 import com.cloud.storage.StoragePool;
 import com.cloud.storage.Storage.StoragePoolType;
+import com.cloud.user.AccountDetailsDao;
 import com.cloud.storage.StorageManager;
 import com.cloud.storage.StoragePoolAutomation;
 import com.cloud.utils.exception.CloudRuntimeException;
@@ -60,35 +65,32 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
     @Inject private ResourceManager _resourceMgr;
     @Inject private StorageManager _storageMgr;
     @Inject private StoragePoolAutomation storagePoolAutomation;
+    @Inject private HostDao _hostDao;
+    @Inject private ClusterDao _clusterDao;
+    @Inject private ClusterDetailsDao clusterDetailsDao;
+    @Inject private AccountDetailsDao accountDetailsDao;
+    @Inject private PrimaryDataStoreDao _primaryDataStoreDao;
+    private int count = 1;
 
     // invoked to add primary storage that is based on the Datera plug-in
     @Override
     public DataStore initialize(Map<String, Object> dsInfos) {
         String url = (String)dsInfos.get("url");
         Long zoneId = (Long)dsInfos.get("zoneId");
+        Long clusterId = (Long)dsInfos.get("clusterId");
         String storagePoolName = (String)dsInfos.get("name");
         String providerName = (String)dsInfos.get("providerName");
         Long capacityBytes = (Long)dsInfos.get("capacityBytes");
         Long capacityIops = (Long)dsInfos.get("capacityIops");
         String tags = (String)dsInfos.get("tags");
-/*
-        s_logger.info("DateraTest URL = "+ url);
-        s_logger.info("DateraTest ZoneId = "+zoneId);
-        s_logger.info("DateraTest Storage pool name = "+storagePoolName);
-        s_logger.info("DateraTest Provider name = "+providerName);
-        s_logger.info("DateraTest Capacity bytes = "+capacityBytes);
-        s_logger.info("DateraTest Capacity Iops = "+capacityIops);
-        s_logger.info("DateraTest Tags = "+tags);
-*/
+
         @SuppressWarnings("unchecked")
         Map<String, String> details = (Map<String, String>)dsInfos.get("details");
 
-        String storageVip = DateraUtil.getStorageVip(url);
-        int storagePort = DateraUtil.getStoragePort(url);
 
         DataCenterVO zone = zoneDao.findById(zoneId);
 
-        String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storageVip;
+        String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + "storageIP";
 
         if (capacityBytes == null || capacityBytes <= 0) {
             throw new IllegalArgumentException("'capacityBytes' must be present and greater than 0.");
@@ -101,9 +103,11 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 
         PrimaryDataStoreParameters parameters = new PrimaryDataStoreParameters();
 
+        String storageVip = String.format("192.168.1.%d", count++);
         parameters.setHost(storageVip);
-        parameters.setPort(storagePort);
-        parameters.setPath(DateraUtil.getModifiedUrl(url));
+        parameters.setPort(3260);
+        //parameters.setPath(DateraUtil.getModifiedUrl(url));
+        parameters.setPath("/export/storage");
         parameters.setType(StoragePoolType.Iscsi);
         parameters.setUuid(uuid);
         parameters.setZoneId(zoneId);
@@ -117,74 +121,54 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         parameters.setTags(tags);
         parameters.setDetails(details);
 
-        String managementVip = DateraUtil.getManagementVip(url);
-        int managementPort = DateraUtil.getManagementPort(url);
 
-        details.put(DateraUtil.MANAGEMENT_VIP, managementVip);
-        details.put(DateraUtil.MANAGEMENT_PORT, String.valueOf(managementPort));
+        String managementUsername = DateraUtil.getValue(DateraUtil.MANAGEMENT_USERNAME, url);
+        String managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
 
-        String clusterAdminUsername = DateraUtil.getValue(DateraUtil.CLUSTER_ADMIN_USERNAME, url);
-        String clusterAdminPassword = DateraUtil.getValue(DateraUtil.CLUSTER_ADMIN_PASSWORD, url);
-
-        details.put(DateraUtil.CLUSTER_ADMIN_USERNAME, clusterAdminUsername);
-        details.put(DateraUtil.CLUSTER_ADMIN_PASSWORD, clusterAdminPassword);
+        details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
+        details.put(DateraUtil.MANAGEMENT_PASSWORD, managementPassword);
 
         long lClusterDefaultMinIops = 100;
         long lClusterDefaultMaxIops = 15000;
         float fClusterDefaultBurstIopsPercentOfMaxIops = 1.5f;
 
-        try {
-            String clusterDefaultMinIops = DateraUtil.getValue(DateraUtil.CLUSTER_DEFAULT_MIN_IOPS, url);
 
-            if (clusterDefaultMinIops != null && clusterDefaultMinIops.trim().length() > 0) {
-                lClusterDefaultMinIops = Long.parseLong(clusterDefaultMinIops);
-            }
-        } catch (NumberFormatException ex) {
-            s_logger.warn("Cannot parse the setting of " + DateraUtil.CLUSTER_DEFAULT_MIN_IOPS +
-                          ", using default value: " + lClusterDefaultMinIops +
-                          ". Exception: " + ex);
-        }
-
-        try {
-            String clusterDefaultMaxIops = DateraUtil.getValue(DateraUtil.CLUSTER_DEFAULT_MAX_IOPS, url);
-
-            if (clusterDefaultMaxIops != null && clusterDefaultMaxIops.trim().length() > 0) {
-                lClusterDefaultMaxIops = Long.parseLong(clusterDefaultMaxIops);
-            }
-        } catch (NumberFormatException ex) {
-            s_logger.warn("Cannot parse the setting of " + DateraUtil.CLUSTER_DEFAULT_MAX_IOPS +
-                          ", using default value: " + lClusterDefaultMaxIops +
-                          ". Exception: " + ex);
-        }
-
-        try {
-            String clusterDefaultBurstIopsPercentOfMaxIops = DateraUtil.getValue(DateraUtil.CLUSTER_DEFAULT_BURST_IOPS_PERCENT_OF_MAX_IOPS, url);
-
-            if (clusterDefaultBurstIopsPercentOfMaxIops != null && clusterDefaultBurstIopsPercentOfMaxIops.trim().length() > 0) {
-                fClusterDefaultBurstIopsPercentOfMaxIops = Float.parseFloat(clusterDefaultBurstIopsPercentOfMaxIops);
-            }
-        } catch (NumberFormatException ex) {
-            s_logger.warn("Cannot parse the setting of " + DateraUtil.CLUSTER_DEFAULT_BURST_IOPS_PERCENT_OF_MAX_IOPS +
-                          ", using default value: " + fClusterDefaultBurstIopsPercentOfMaxIops +
-                          ". Exception: " + ex);
-        }
-
-        if (lClusterDefaultMinIops > lClusterDefaultMaxIops) {
-            throw new CloudRuntimeException("The parameter '" + DateraUtil.CLUSTER_DEFAULT_MIN_IOPS + "' must be less than or equal to the parameter '" +
-                DateraUtil.CLUSTER_DEFAULT_MAX_IOPS + "'.");
-        }
-
-        if (Float.compare(fClusterDefaultBurstIopsPercentOfMaxIops, 1.0f) < 0) {
-            throw new CloudRuntimeException("The parameter '" + DateraUtil.CLUSTER_DEFAULT_BURST_IOPS_PERCENT_OF_MAX_IOPS + "' must be greater than or equal to 1.");
-        }
-
-        details.put(DateraUtil.CLUSTER_DEFAULT_MIN_IOPS, String.valueOf(lClusterDefaultMinIops));
-        details.put(DateraUtil.CLUSTER_DEFAULT_MAX_IOPS, String.valueOf(lClusterDefaultMaxIops));
-        details.put(DateraUtil.CLUSTER_DEFAULT_BURST_IOPS_PERCENT_OF_MAX_IOPS, String.valueOf(fClusterDefaultBurstIopsPercentOfMaxIops));
-
-        // this adds a row in the cloud.storage_pool table for this Datera cluster
+       // this adds a row in the cloud.storage_pool table for this Datera cluster
         return dataStoreHelper.createPrimaryDataStore(parameters);
     }
+
+    private StorageResponse createDateraVolume(String storageVip, int storagePort, String clusterAdminUsername,
+        String clusterAdminPassword, String appName) {
+        StorageResponse resp = null;
+
+        DateraRestClient rest = new DateraRestClient(storageVip, storagePort, clusterAdminUsername, clusterAdminPassword);
+/*
+        //create the initiators group
+        Account csAccount = CallContext.current().getCallingAccount();
+        List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
+        ClusterVO cluster = _clusterDao.findById(clusterId);
+        List<String> iqns = new ArrayList<String>();
+        for(HostVO host : hosts)
+        {
+         iqns.add(host.getStorageUrl());
+        }
+        String iqnGroupName = "Initiator"+csAccount.getUuid();
+        rest.createInitiatorGroup(iqnGroupName, iqns);
+*/
+
+        List<String> initiatorGroups = new ArrayList<String>();
+        initiatorGroups.add("/initiator_groups/cluster2_initiator_group");
+        initiatorGroups.add("/initiator_groups/test_initiator_groups1");
+        initiatorGroups.add("/initiator_groups/Computes");
+
+        List<String> initiators = new ArrayList<String>();
+
+        //create the volume on datera node
+        rest.createVolume(appName,initiators,2,"allow_all",initiatorGroups);
+
+        return rest.getStorageInfo(appName, "storage-1");
+
+   }
 
     // do not implement this method for Datera's plug-in
     @Override

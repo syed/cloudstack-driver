@@ -16,7 +16,6 @@
 // under the License.
 package org.apache.cloudstack.storage.datastore.driver;
 
-import java.text.NumberFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -33,35 +32,26 @@ import org.apache.cloudstack.engine.subsystem.api.storage.VolumeInfo;
 import org.apache.cloudstack.framework.async.AsyncCompletionCallback;
 import org.apache.cloudstack.storage.command.CommandResult;
 import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDao;
-import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailVO;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.apache.log4j.Logger;
 
 import com.cloud.agent.api.Answer;
-import com.cloud.agent.api.to.DataObjectType;
 import com.cloud.agent.api.to.DataStoreTO;
 import com.cloud.agent.api.to.DataTO;
 import com.cloud.capacity.CapacityManager;
-import com.cloud.dc.ClusterVO;
-import com.cloud.dc.ClusterDetailsVO;
 import com.cloud.dc.ClusterDetailsDao;
 import com.cloud.dc.dao.ClusterDao;
 import com.cloud.host.Host;
 import com.cloud.host.HostVO;
 import com.cloud.host.dao.HostDao;
-import com.cloud.storage.Storage.StoragePoolType;
-import com.cloud.storage.ResizeVolumePayload;
 import com.cloud.storage.StoragePool;
 import com.cloud.storage.Volume;
-import com.cloud.storage.VolumeDetailVO;
 import com.cloud.storage.VolumeVO;
 import com.cloud.storage.dao.VolumeDao;
 import com.cloud.storage.dao.VolumeDetailsDao;
-import com.cloud.user.AccountDetailVO;
 import com.cloud.user.AccountDetailsDao;
-import com.cloud.user.AccountVO;
 import com.cloud.user.dao.AccountDao;
 import com.cloud.utils.exception.CloudRuntimeException;
 
@@ -94,12 +84,6 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         return null;
     }
 
-    private DateraUtil.DateraAccount createDateraAccount(DateraUtil.DateraConnection dtConnection, String dtAccountName) {
-        long accountNumber = DateraUtil.createDateraAccount(dtConnection, dtAccountName);
-
-        return DateraUtil.getDateraAccountById(dtConnection, accountNumber);
-    }
-
     @Override
     public ChapInfo getChapInfo(VolumeInfo volumeInfo) {
         return null;
@@ -120,17 +104,17 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         long dtVolumeId = Long.parseLong(volumeInfo.getFolder());
         long clusterId = host.getClusterId();
         long storagePoolId = dataStore.getId();
-
+/*
         ClusterDetailsVO clusterDetail = _clusterDetailsDao.findDetail(clusterId, DateraUtil.getVagKey(storagePoolId));
 
         String vagId = clusterDetail != null ? clusterDetail.getValue() : null;
-
+*/
         List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
 
         if (!DateraUtil.hostsSupport_iScsi(hosts)) {
             return false;
         }
-
+/*
         DateraUtil.DateraConnection dtConnection = DateraUtil.getDateraConnection(storagePoolId, _storagePoolDetailsDao);
 
         if (vagId != null) {
@@ -146,7 +130,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             DateraUtil.placeVolumeInVolumeAccessGroup(dtConnection, dtVolumeId, storagePoolId, cluster.getUuid(), hosts, _clusterDetailsDao);
         }
-
+*/
         return true;
     }
 
@@ -159,7 +143,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         if (volumeInfo == null || host == null || dataStore == null) {
             return;
         }
-
+/*
         long dtVolumeId = Long.parseLong(volumeInfo.getFolder());
         long clusterId = host.getClusterId();
         long storagePoolId = dataStore.getId();
@@ -180,56 +164,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             DateraUtil.modifyDateraVag(dtConnection, dtVag.getId(), hostIqns, volumeIds);
         }
-    }
-
-    private long getDefaultMinIops(long storagePoolId) {
-        StoragePoolDetailVO storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.CLUSTER_DEFAULT_MIN_IOPS);
-
-        String clusterDefaultMinIops = storagePoolDetail.getValue();
-
-        return Long.parseLong(clusterDefaultMinIops);
-    }
-
-    private long getDefaultMaxIops(long storagePoolId) {
-        StoragePoolDetailVO storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.CLUSTER_DEFAULT_MAX_IOPS);
-
-        String clusterDefaultMaxIops = storagePoolDetail.getValue();
-
-        return Long.parseLong(clusterDefaultMaxIops);
-    }
-
-    private long getDefaultBurstIops(long storagePoolId, long maxIops) {
-        StoragePoolDetailVO storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.CLUSTER_DEFAULT_BURST_IOPS_PERCENT_OF_MAX_IOPS);
-
-        String clusterDefaultBurstIopsPercentOfMaxIops = storagePoolDetail.getValue();
-
-        float fClusterDefaultBurstIopsPercentOfMaxIops = Float.parseFloat(clusterDefaultBurstIopsPercentOfMaxIops);
-
-        return (long)(maxIops * fClusterDefaultBurstIopsPercentOfMaxIops);
-    }
-
-    private DateraUtil.DateraVolume createDateraVolume(DateraUtil.DateraConnection dtConnection, VolumeInfo volumeInfo, long dtAccountId) {
-        long storagePoolId = volumeInfo.getDataStore().getId();
-
-        final Iops iops;
-
-        Long minIops = volumeInfo.getMinIops();
-        Long maxIops = volumeInfo.getMaxIops();
-
-        if (minIops == null || minIops <= 0 || maxIops == null || maxIops <= 0) {
-            long defaultMaxIops = getDefaultMaxIops(storagePoolId);
-
-            iops = new Iops(getDefaultMinIops(storagePoolId), defaultMaxIops, getDefaultBurstIops(storagePoolId, defaultMaxIops));
-        } else {
-            iops = new Iops(volumeInfo.getMinIops(), volumeInfo.getMaxIops(), getDefaultBurstIops(storagePoolId, volumeInfo.getMaxIops()));
-        }
-
-        long volumeSize = getVolumeSizeIncludingHypervisorSnapshotReserve(volumeInfo, _storagePoolDao.findById(storagePoolId));
-
-        long dtVolumeId = DateraUtil.createDateraVolume(dtConnection, DateraUtil.getDateraVolumeName(volumeInfo.getName()), dtAccountId, volumeSize, true,
-                NumberFormat.getInstance().format(volumeInfo.getSize()), iops.getMinIops(), iops.getMaxIops(), iops.getBurstIops());
-
-        return DateraUtil.getDateraVolume(dtConnection, dtVolumeId);
+*/
     }
 
     @Override
@@ -237,7 +172,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         long usedSpace = 0;
 
         List<VolumeVO> lstVolumes = _volumeDao.findByPoolId(storagePool.getId(), null);
-
+/*
         if (lstVolumes != null) {
             for (VolumeVO volume : lstVolumes) {
                 VolumeDetailVO volumeDetail = _volumeDetailsDao.findDetail(volume.getId(), DateraUtil.VOLUME_SIZE);
@@ -249,7 +184,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 }
             }
         }
-
+*/
         return usedSpace;
     }
 
@@ -305,24 +240,12 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         }
     }
 
-    private void deleteDateraVolume(DateraUtil.DateraConnection dtConnection, VolumeInfo volumeInfo)
-    {
-        Long storagePoolId = volumeInfo.getPoolId();
-
-        if (storagePoolId == null) {
-            return; // this volume was never assigned to a storage pool, so no SAN volume should exist for it
-        }
-
-        long dtVolumeId = Long.parseLong(volumeInfo.getFolder());
-
-        DateraUtil.deleteDateraVolume(dtConnection, dtVolumeId);
-    }
 
     @Override
     public void createAsync(DataStore dataStore, DataObject dataObject, AsyncCompletionCallback<CreateCmdResult> callback) {
         String iqn = null;
         String errMsg = null;
-
+/*
         if (dataObject.getType() == DataObjectType.VOLUME) {
             VolumeInfo volumeInfo = (VolumeInfo)dataObject;
             AccountVO account = _accountDao.findById(volumeInfo.getAccountId());
@@ -376,7 +299,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         } else {
             errMsg = "Invalid DataObjectType (" + dataObject.getType() + ") passed to createAsync";
         }
-
+*/
         // path = iqn
         // size is pulled from DataObject instance, if errMsg is null
         CreateCmdResult result = new CreateCmdResult(iqn, new Answer(null, errMsg == null, errMsg));
@@ -386,20 +309,10 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         callback.complete(result);
     }
 
-    private void updateVolumeDetails(long volumeId, long dtVolumeSize) {
-        VolumeDetailVO volumeDetailVo = _volumeDetailsDao.findDetail(volumeId, DateraUtil.VOLUME_SIZE);
-
-        if (volumeDetailVo == null || volumeDetailVo.getValue() == null) {
-            volumeDetailVo = new VolumeDetailVO(volumeId, DateraUtil.VOLUME_SIZE, String.valueOf(dtVolumeSize), false);
-
-            _volumeDetailsDao.persist(volumeDetailVo);
-        }
-    }
-
     @Override
     public void deleteAsync(DataStore dataStore, DataObject dataObject, AsyncCompletionCallback<CommandResult> callback) {
         String errMsg = null;
-
+/*
         if (dataObject.getType() == DataObjectType.VOLUME) {
             try {
                 VolumeInfo volumeInfo = (VolumeInfo)dataObject;
@@ -430,7 +343,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         } else {
             errMsg = "Invalid DataObjectType (" + dataObject.getType() + ") passed to deleteAsync";
         }
-
+*/
         CommandResult result = new CommandResult();
 
         result.setResult(errMsg);
@@ -462,7 +375,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     public void resize(DataObject dataObject, AsyncCompletionCallback<CreateCmdResult> callback) {
         String iqn = null;
         String errMsg = null;
-
+/*
         if (dataObject.getType() == DataObjectType.VOLUME) {
             VolumeInfo volumeInfo = (VolumeInfo)dataObject;
             iqn = volumeInfo.get_iScsiName();
@@ -493,7 +406,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         } else {
             errMsg = "Invalid DataObjectType (" + dataObject.getType() + ") passed to resize";
         }
-
+*/
         CreateCmdResult result = new CreateCmdResult(iqn, new Answer(null, errMsg == null, errMsg));
 
         result.setResult(errMsg);
