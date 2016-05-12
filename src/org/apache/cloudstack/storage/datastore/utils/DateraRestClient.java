@@ -185,7 +185,66 @@ public class DateraRestClient {
        size = sz;
      }
  }
+  
+ public class AppModelEx
+ {
+     public String name;
 
+     public AppModelEx(String appName)
+     {
+       name = appName;
+     }
+ }
+ 
+ public class StorageModelEx
+ {
+     public String name;
+
+     public StorageModelEx(String storageName)
+     {
+       name = storageName;
+     }
+ }
+ 
+ public boolean createVolume(String appName, String storageInstance, String volName, int volSize)
+ {
+     HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances/"+storageInstance+"/volumes");
+     postRequest.setHeader("Content-Type","application/json");
+     postRequest.setHeader("auth-token",respLogin.getKey());
+     VolumeModel vol = new VolumeModel(volSize,3);
+     String payload = gson.toJson(vol);
+     setPayload(postRequest,payload);
+     String response = execute(postRequest);
+     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+
+     return resp.equals(appName) ? true : false;
+ }
+ public boolean createStorageInstance(String appName, String storageInstance)
+ {
+    HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances");
+    postRequest.setHeader("Content-Type","application/json");
+    postRequest.setHeader("auth-token",respLogin.getKey());
+    StorageModelEx storage = new StorageModelEx(storageInstance);
+    String payload = gson.toJson(storage);
+    setPayload(postRequest,payload);
+    String response = execute(postRequest);
+    GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+    
+    return resp.equals(appName) ? true : false;
+ }
+ public boolean createAppInstance(String appName)
+ {
+    HttpPost postRequest = new HttpPost("/v2/app_instances");
+    postRequest.setHeader("Content-Type","application/json");
+    postRequest.setHeader("auth-token",respLogin.getKey());
+    AppModelEx app = new AppModelEx(appName);
+    String payload = gson.toJson(app);
+    setPayload(postRequest,payload);
+    String response = execute(postRequest);
+    GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+    
+    return resp.equals(appName) ? true : false;
+ }
  public boolean setAdminState(String appInstance,boolean online)
  {
   boolean ret = false;
@@ -196,18 +255,20 @@ public class DateraRestClient {
   putRequest.setHeader("auth-token",respLogin.getKey());
   String payload = gson.toJson(prev);
 
-   try {
-     StringEntity params = new StringEntity(payload);
-     putRequest.setEntity(params);
-    } catch (UnsupportedEncodingException e) {
-     // TODO Auto-generated catch block
-     e.printStackTrace();
-    }
+   setPayload(putRequest, payload);
 
   String response = execute(putRequest);
   GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
   return respObj.equals(appInstance) ? true : false;
  }
+private void setPayload(HttpPut request, String payload) {
+    try {
+         StringEntity params = new StringEntity(payload);
+         request.setEntity(params);
+        } catch (UnsupportedEncodingException e) {
+         e.printStackTrace();
+       }
+}
 
  public boolean resizeVolume(String appInstance, String storageInstance, String volumeInstance, int newSize)
  {
@@ -219,13 +280,7 @@ public class DateraRestClient {
     VolumeResize vol = new VolumeResize(newSize);
     String payload = gson.toJson(vol);
 
-    try {
-           StringEntity params = new StringEntity(payload);
-           putRequest.setEntity(params);
-           } catch (UnsupportedEncodingException e) {
-
-           e.printStackTrace();
-           }
+    setPayload(putRequest, payload);
      String response = execute(putRequest);
      GenericResponse resp = gson.fromJson(response,GenericResponse.class);
 
@@ -280,15 +335,18 @@ public class DateraRestClient {
   InitiatorGroup intrGroup = new InitiatorGroup(name,initiators);
   String payload = gson.toJson(intrGroup);
 
-  try {
-   StringEntity params = new StringEntity(payload);
-        postRequest.setEntity(params);
-  } catch (UnsupportedEncodingException e) {
-   // TODO Auto-generated catch block
-   e.printStackTrace();
-  }
+  setPayload(postRequest, payload);
   execute(postRequest);
  }
+private void setPayload(HttpPost request, String payload) {
+	try {
+	   StringEntity params = new StringEntity(payload);
+	        request.setEntity(params);
+	  } catch (UnsupportedEncodingException e) {
+	   // TODO Auto-generated catch block
+	   e.printStackTrace();
+	  }
+}
 
  public void getInitiators()
  {
@@ -304,13 +362,7 @@ public class DateraRestClient {
 
        String payload = generateVolumePayload(appInstanceName,initiators,volumeGB,accessControlMode,initiatorGroups);
 
-  try {
-   StringEntity params = new StringEntity(payload);
-        postRequest.setEntity(params);
-  } catch (UnsupportedEncodingException e) {
-   // TODO Auto-generated catch block
-   e.printStackTrace();
-  }
+  setPayload(postRequest, payload);
 
        execute(postRequest);
 
