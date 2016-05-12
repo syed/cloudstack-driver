@@ -100,12 +100,17 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
             throw new IllegalArgumentException("'capacityIops' must be present and greater than 0.");
         }
 
+        String managementIP = DateraUtil.getManagementIP(url);
+        int managementPort = DateraUtil.getManagementPort(url);
+
+        String appInstanceName = DateraUtil.getValue(DateraUtil.APP_NAME, url);
+        String managementUsername = DateraUtil.getValue(DateraUtil.MANAGEMENT_USERNAME, url);
+        String managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
 
         PrimaryDataStoreParameters parameters = new PrimaryDataStoreParameters();
 
-        String storageVip = String.format("192.168.1.%d", count++);
-        parameters.setHost(storageVip);
-        parameters.setPort(3260);
+        //parameters.setHost(storageVip);
+        //parameters.setPort(storagePort);
         //parameters.setPath(DateraUtil.getModifiedUrl(url));
         parameters.setPath("/export/storage");
         parameters.setType(StoragePoolType.Iscsi);
@@ -122,20 +127,32 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         parameters.setDetails(details);
 
 
-        String managementUsername = DateraUtil.getValue(DateraUtil.MANAGEMENT_USERNAME, url);
-        String managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
 
+        details.put(DateraUtil.MANAGEMENT_IP, managementIP);
+        details.put(DateraUtil.MANAGEMENT_PORT,String.valueOf(managementPort));
         details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
         details.put(DateraUtil.MANAGEMENT_PASSWORD, managementPassword);
 
-        long lClusterDefaultMinIops = 100;
-        long lClusterDefaultMaxIops = 15000;
-        float fClusterDefaultBurstIopsPercentOfMaxIops = 1.5f;
+        DateraRestClient.StorageResponse storageInfo = createApplicationInstance(managementIP,managementPort,managementUsername,managementPassword,appInstanceName);
 
+        parameters.setHost(storageInfo.access.ips.get(0));
+        parameters.setPath(storageInfo.access.iqn);
 
        // this adds a row in the cloud.storage_pool table for this Datera cluster
         return dataStoreHelper.createPrimaryDataStore(parameters);
     }
+
+    private StorageResponse createApplicationInstance(String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName) {
+
+        DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
+        rest.createAppInstance(appInstanceName);
+        rest.createStorageInstance(appInstanceName, rest.defaultStorageName);
+        rest.createVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName, 2);
+        rest.setAdminState(appInstanceName, false);
+        rest.deleteVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName);
+        rest.setAdminState(appInstanceName, false);
+        return rest.getStorageInfo(appInstanceName, rest.defaultStorageName);
+     }
 
     private StorageResponse createDateraVolume(String storageVip, int storagePort, String clusterAdminUsername,
         String clusterAdminPassword, String appName) {

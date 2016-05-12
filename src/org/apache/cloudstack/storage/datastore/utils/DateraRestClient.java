@@ -42,8 +42,8 @@ public class DateraRestClient {
  private int managementPort;
  private String userName;
  private String password;
- private final String defaultStorageName = "storage-1";
- private final String defaultVolumeName = "volume-1";
+ public final String defaultStorageName = "storage-1";
+ public final String defaultVolumeName = "volume-1";
 
  public DateraRestClient(String ip, int port,String user, String pass)
  {
@@ -185,7 +185,7 @@ public class DateraRestClient {
        size = sz;
      }
  }
-  
+
  public class AppModelEx
  {
      public String name;
@@ -195,7 +195,7 @@ public class DateraRestClient {
        name = appName;
      }
  }
- 
+
  public class StorageModelEx
  {
      public String name;
@@ -205,7 +205,7 @@ public class DateraRestClient {
        name = storageName;
      }
  }
- 
+
  public boolean createVolume(String appName, String storageInstance, String volName, int volSize)
  {
      HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances/"+storageInstance+"/volumes");
@@ -229,7 +229,7 @@ public class DateraRestClient {
     setPayload(postRequest,payload);
     String response = execute(postRequest);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
-    
+
     return resp.equals(appName) ? true : false;
  }
  public boolean createAppInstance(String appName)
@@ -242,7 +242,7 @@ public class DateraRestClient {
     setPayload(postRequest,payload);
     String response = execute(postRequest);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
-    
+
     return resp.equals(appName) ? true : false;
  }
  public boolean setAdminState(String appInstance,boolean online)
@@ -339,13 +339,13 @@ private void setPayload(HttpPut request, String payload) {
   execute(postRequest);
  }
 private void setPayload(HttpPost request, String payload) {
-	try {
-	   StringEntity params = new StringEntity(payload);
-	        request.setEntity(params);
-	  } catch (UnsupportedEncodingException e) {
-	   // TODO Auto-generated catch block
-	   e.printStackTrace();
-	  }
+   try {
+         StringEntity params = new StringEntity(payload);
+          request.setEntity(params);
+        } catch (UnsupportedEncodingException e) {
+
+       e.printStackTrace();
+       }
 }
 
  public void getInitiators()

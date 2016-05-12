@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+
 import com.cloud.host.Host;
 import com.cloud.host.HostVO;
 import com.cloud.utils.exception.CloudRuntimeException;
@@ -33,8 +34,13 @@ public class DateraUtil {
 
     public static final String MANAGEMENT_PORT = "mgmtPort";
 
+    public static final String STORAGE_VIP = "storageVIP";
+    public static final String STORAGE_VPort = "storageVPort";
+
     public static final String MANAGEMENT_USERNAME = "mgmtUserName";
     public static final String MANAGEMENT_PASSWORD = "mgmtPassword";
+
+    public static final String APP_NAME = "appName";
 
     public static final String NETWORK_POOL_NAME = "networkPoolName";
     public static final String MAX_TOTAL_IOPS = "maxTotalIOPs";
@@ -44,41 +50,27 @@ public class DateraUtil {
     public static final String MAX_READ_BANDWIDTH = "maxReadBandwidth";
     public static final String MAX_WRITE_BANDWIDTH = "maxWriteBandwidth";
 
-/*    // these three variables should only be used for the Datera plug-in with the name DateraUtil.PROVIDER_NAME
-    public static final String CLUSTER_DEFAULT_MIN_IOPS = "clusterDefaultMinIops";
-    public static final String CLUSTER_DEFAULT_MAX_IOPS = "clusterDefaultMaxIops";
-    public static final String CLUSTER_DEFAULT_BURST_IOPS_PERCENT_OF_MAX_IOPS = "clusterDefaultBurstIopsPercentOfMaxIops";
 
-    // these three variables should only be used for the Datera plug-in with the name DateraUtil.SHARED_PROVIDER_NAME
-    public static final String MIN_IOPS = "minIops";
-    public static final String MAX_IOPS = "maxIops";
-    public static final String BURST_IOPS = "burstIops";
-
-    public static final String ACCOUNT_ID = "accountId";
-    public static final String VOLUME_ID = "volumeId";
-    public static final String SNAPSHOT_ID = "snapshotId";
-    public static final String CLONE_ID = "cloneId";
-
-    public static final String VOLUME_SIZE = "sfVolumeSize";
-    public static final String SNAPSHOT_SIZE = "sfSnapshotSize";
-
-    public static final String SNAPSHOT_STORAGE_POOL_ID = "sfSnapshotStoragePoolId";
-
-    public static final String CHAP_INITIATOR_USERNAME = "chapInitiatorUsername";
-    public static final String CHAP_INITIATOR_SECRET = "chapInitiatorSecret";
-
-    public static final String CHAP_TARGET_USERNAME = "chapTargetUsername";
-    public static final String CHAP_TARGET_SECRET = "chapTargetSecret";
-
-    public static final String DATACENTER = "datacenter";
-
-    public static final String DATASTORE_NAME = "datastoreName";
-    public static final String IQN = "iqn";
-*/
     public static final long MAX_IOPS_PER_VOLUME = 100000;
 
     private static final int DEFAULT_MANAGEMENT_PORT = 7718;
     private static final int DEFAULT_STORAGE_PORT = 3260;
+
+
+
+    private static String getVip(String keyToMatch, String url) {
+        String delimiter = ":";
+
+        String storageVip = getValue(keyToMatch, url);
+
+        int index = storageVip.indexOf(delimiter);
+
+        if (index != -1) {
+            return storageVip.substring(0, index);
+        }
+
+        return storageVip;
+    }
 
     public static boolean hostsSupport_iScsi(List<HostVO> hosts) {
         if (hosts == null || hosts.size() == 0) {
@@ -227,13 +219,20 @@ public class DateraUtil {
         return modifiedUrl;
     }
 
-    public static String getManagementVip(String url) {
+    public static String getManagementIP(String url) {
         return getIP(DateraUtil.MANAGEMENT_IP, url);
     }
 
 
     public static int getManagementPort(String url) {
         return getPort(DateraUtil.MANAGEMENT_IP, url, DEFAULT_MANAGEMENT_PORT);
+    }
+
+    public static String getStorageVip(String url) {
+        return getVip(DateraUtil.STORAGE_VIP, url);
+    }
+    public static int getStoragePort(String url) {
+        return getPort(DateraUtil.STORAGE_VIP, url, DEFAULT_STORAGE_PORT);
     }
 
     private static String getIP(String keyToMatch, String url) {
