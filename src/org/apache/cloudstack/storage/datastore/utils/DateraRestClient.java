@@ -118,10 +118,13 @@ public class DateraRestClient {
   public VolumeInstanceModel volumes;
   @SerializedName("acl_policy")
   public ACLPolicyModel aclPolicy;
-  public StorageModel(VolumeInstanceModel vols, ACLPolicyModel policy)
+  @SerializedName("ip_pool")
+  public String ipPool;
+  public StorageModel(String networkPoolName, VolumeInstanceModel vols, ACLPolicyModel policy)
   {
    volumes = vols;
    aclPolicy = policy;
+   ipPool = networkPoolName;
   }
  }
 
@@ -364,13 +367,13 @@ private void setPayload(HttpPost request, String payload) {
        getRequest.setHeader("auth-token",respLogin.getKey());
        execute(getRequest);
  }
- public void createVolume(String appInstanceName, List<String> initiators,int volumeGB, String accessControlMode, List<String> initiatorGroups)
+ public void createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
  {
        HttpPost postRequest = new HttpPost("/v2/app_instances");
        postRequest.setHeader("Content-type","application/json");
        postRequest.setHeader("auth-token",respLogin.getKey());
 
-       String payload = generateVolumePayload(appInstanceName,initiators,volumeGB,accessControlMode,initiatorGroups);
+       String payload = generateVolumePayload(appInstanceName,initiators,initiatorGroups,volumeGB,volReplica,accessControlMode,networkPoolName);
 
   setPayload(postRequest, payload);
 
@@ -379,16 +382,15 @@ private void setPayload(HttpPost request, String payload) {
  }
 
  public String generateVolumePayload(String appInstanceName,
-   List<String> initiators, int volumeGB, String accessControlMode, List<String> initiatorGroups) {
+   List<String> initiators, List<String> initiatorGroups, int volumeGB, int volReplica, String accessControlMode, String networkPoolName) {
   // TODO Auto-generated method stub
   String payload = "";
-  VolumeModel vol = new VolumeModel(volumeGB,3);
 
   AppModel app = new AppModel(appInstanceName,accessControlMode,
     new StorageInstanceModel(
-      new StorageModel(
+      new StorageModel(networkPoolName,
         new VolumeInstanceModel(
-          new VolumeModel(volumeGB, 3)),new ACLPolicyModel(initiators,initiatorGroups))));
+          new VolumeModel(volumeGB, volReplica)),new ACLPolicyModel(initiators,initiatorGroups))));
 
   payload = gson.toJson(app);
 
