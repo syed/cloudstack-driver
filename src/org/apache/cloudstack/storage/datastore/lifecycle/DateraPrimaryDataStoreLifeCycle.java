@@ -32,6 +32,8 @@ import org.apache.cloudstack.engine.subsystem.api.storage.PrimaryDataStoreLifeCy
 import org.apache.cloudstack.engine.subsystem.api.storage.PrimaryDataStoreParameters;
 import org.apache.cloudstack.engine.subsystem.api.storage.ZoneScope;
 import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDao;
+import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailVO;
+import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient.StorageResponse;
@@ -70,7 +72,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
     @Inject private ClusterDetailsDao clusterDetailsDao;
     @Inject private AccountDetailsDao accountDetailsDao;
     @Inject private PrimaryDataStoreDao _primaryDataStoreDao;
-    private int count = 1;
+    @Inject private StoragePoolDetailsDao _storagePoolDetailsDao;
 
     // invoked to add primary storage that is based on the Datera plug-in
     @Override
@@ -139,6 +141,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         details.put(DateraUtil.MANAGEMENT_PORT,String.valueOf(managementPort));
         details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
         details.put(DateraUtil.MANAGEMENT_PASSWORD, managementPassword);
+        details.put(DateraUtil.APP_NAME, appInstanceName);
 
         details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
         details.put(DateraUtil.VOLUME_REPLICA,String.valueOf(volReplica));
@@ -270,6 +273,28 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
     // invoked to delete primary storage that is based on the Datera plug-in
     @Override
     public boolean deleteDataStore(DataStore store) {
+
+        long storagePoolId = store.getId();
+
+        StoragePoolDetailVO storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_IP);
+        String managementIP = storagePoolDetail.getValue();
+
+        storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_PORT);
+        int managementPort = Integer.parseInt(storagePoolDetail.getValue());
+
+        storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_USERNAME);
+        String managementUserName = storagePoolDetail.getValue();
+
+        storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_PASSWORD);
+        String managementPassword = storagePoolDetail.getValue();
+
+        storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.APP_NAME);
+        String appInstanceName = storagePoolDetail.getValue();
+
+        DateraRestClient rest = new DateraRestClient(managementIP,managementPort,managementUserName,managementPassword);
+        rest.setAdminState(appInstanceName, false);
+        rest.deleteAppInstance(appInstanceName);
+
         return dataStoreHelper.deletePrimaryDataStore(store);
     }
 
