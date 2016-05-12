@@ -150,7 +150,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         details.put(DateraUtil.MAX_WRITE_BANDWIDTH,String.valueOf(maxWriteBandWidth));
 
 
-        DateraRestClient.StorageResponse storageInfo = createApplicationInstance(managementIP,managementPort,managementUsername,managementPassword,appInstanceName);
+        DateraRestClient.StorageResponse storageInfo = createApplicationInstance(managementIP,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName);
 
         if(null == storageInfo.access.ips || null == storageInfo.access.iqn || 0 == storageInfo.access.ips.size() || 0 == storageInfo.access.iqn.length())
             throw new CloudRuntimeException("Could not get Storage ip and iqn");
@@ -166,15 +166,16 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         return dataStoreHelper.createPrimaryDataStore(parameters);
     }
 
-    private StorageResponse createApplicationInstance(String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName) {
+    private StorageResponse createApplicationInstance(String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName, String networkPoolName) {
 
         DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
         if(rest.isAppInstanceExists(appInstanceName))
              throw new CloudRuntimeException("App name already exists : "+appInstanceName);
 
-        rest.createAppInstance(appInstanceName);
-        rest.createStorageInstance(appInstanceName, rest.defaultStorageName);
-        rest.createVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName, 2);
+        //rest.createAppInstance(appInstanceName);
+        //rest.createStorageInstance(appInstanceName, rest.defaultStorageName);
+        //rest.createVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName, 2);
+        rest.createVolume(appInstanceName, null, null, 2, 3, "allow_all", "/access_network_ip_pools/"+networkPoolName);
         rest.setAdminState(appInstanceName, false);
         rest.deleteVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName);
         rest.setAdminState(appInstanceName, true);
@@ -208,7 +209,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         List<String> initiators = new ArrayList<String>();
 
         //create the volume on datera node
-        rest.createVolume(appName,initiators,2,"allow_all",initiatorGroups);
+        //rest.createVolume(appName,initiators,2,"allow_all",initiatorGroups);
 
         return rest.getStorageInfo(appName, "storage-1");
 
