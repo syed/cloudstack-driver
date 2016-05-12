@@ -205,7 +205,17 @@ public class DateraRestClient {
        name = storageName;
      }
  }
-
+   public boolean getAppInstance(String appName)
+   {
+      HttpGet getRequest = new HttpGet("/v2/app_instances/"+appName);
+      getRequest.setHeader("Content-Type","application/json");
+      getRequest.setHeader("auth-token",respLogin.getKey());
+      String response = execute(getRequest);
+      GenericResponse resp = gson.fromJson(response, GenericResponse.class); 
+      
+      return resp.name.equals(appName) ? true : false;
+   }
+ 
  public boolean createVolume(String appName, String storageInstance, String volName, int volSize)
  {
      HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances/"+storageInstance+"/volumes");
@@ -217,7 +227,7 @@ public class DateraRestClient {
      String response = execute(postRequest);
      GenericResponse resp = gson.fromJson(response, GenericResponse.class);
 
-     return resp.equals(appName) ? true : false;
+     return resp.name.equals(appName) ? true : false;
  }
  public boolean createStorageInstance(String appName, String storageInstance)
  {
@@ -230,7 +240,7 @@ public class DateraRestClient {
     String response = execute(postRequest);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
 
-    return resp.equals(appName) ? true : false;
+    return resp.name.equals(appName) ? true : false;
  }
  public boolean createAppInstance(String appName)
  {
@@ -243,7 +253,7 @@ public class DateraRestClient {
     String response = execute(postRequest);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
 
-    return resp.equals(appName) ? true : false;
+    return resp.name.equals(appName) ? true : false;
  }
  public boolean setAdminState(String appInstance,boolean online)
  {
@@ -259,7 +269,7 @@ public class DateraRestClient {
 
   String response = execute(putRequest);
   GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
-  return respObj.equals(appInstance) ? true : false;
+  return respObj.name.equals(appInstance) ? true : false;
  }
 private void setPayload(HttpPut request, String payload) {
     try {
@@ -284,7 +294,7 @@ private void setPayload(HttpPut request, String payload) {
      String response = execute(putRequest);
      GenericResponse resp = gson.fromJson(response,GenericResponse.class);
 
-     return resp.equals(volumeInstance) ? true : false;
+     return resp.name.equals(volumeInstance) ? true : false;
  }
 
  public boolean deleteAppInstance(String appInstance)
@@ -294,7 +304,7 @@ private void setPayload(HttpPut request, String payload) {
   String response = execute(deleteRequest);
 
   GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
-  return respObj.equals(appInstance) ? true : false;
+  return respObj.name.equals(appInstance) ? true : false;
  }
  public boolean deleteVolume(String appInstance, String storageInstance, String volumeInstance)
  {
@@ -306,7 +316,7 @@ private void setPayload(HttpPut request, String payload) {
   String response = execute(deleteRequest);
 
   GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
-  return respObj.equals(volumeInstance) ? true : false;
+  return respObj.name.equals(volumeInstance) ? true : false;
 
  }
  public StorageResponse getStorageInfo(String appInstance, String storageInstance)
