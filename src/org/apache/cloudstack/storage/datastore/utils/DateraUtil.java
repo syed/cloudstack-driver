@@ -42,6 +42,8 @@ public class DateraUtil {
 
     public static final String APP_NAME = "appName";
 
+    public static final String VOLUME_REPLICA = "replica";
+
     public static final String NETWORK_POOL_NAME = "networkPoolName";
     public static final String MAX_TOTAL_IOPS = "maxTotalIOPs";
     public static final String MAX_READ_IOPS = "maxReadIOPs";
@@ -304,5 +306,63 @@ public class DateraUtil {
         }
 
         return null;
+    }
+    private static int getIntegerValue(String key,String url)
+    {
+        int value = 0;
+        try
+        {
+            value = Integer.parseInt(DateraUtil.getValue(key, url));
+
+        }catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid URL format ("+key+" is not an integer)");
+        }
+        return value;
+    }
+
+    private static Long getLongValue(String key,String url)
+    {
+        Long value;
+        try
+        {
+            value = Long.parseLong(DateraUtil.getValue(key, url));
+
+        }catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid URL format ("+key+" is not an integer)");
+        }
+        return value;
+    }
+
+    public static int getReplica(String url)
+    {
+        return getIntegerValue(DateraUtil.VOLUME_REPLICA,url);
+    }
+
+    public static Long getMaxTotalIOPs(String url)
+    {
+        return getLongValue(DateraUtil.MAX_TOTAL_IOPS,url);
+    }
+
+    public static Long getMaxReadIOPs(String url)
+    {
+        return getLongValue(DateraUtil.MAX_READ_IOPS,url);
+    }
+
+    public static Long getMaxWriteIOPs(String url)
+    {
+        return getLongValue(DateraUtil.MAX_WRITE_IOPS,url);
+    }
+
+    public static Long getMaxTotalBandwidth(String url)
+    {
+        return getLongValue(DateraUtil.MAX_TOTAL_BANDWIDTH,url);
+    }
+    public static Long getMaxReadBandwidth(String url)
+    {
+        return getLongValue(DateraUtil.MAX_READ_BANDWIDTH,url);
+    }
+    public static Long getMaxWriteBandwidth(String url)
+    {
+        return getLongValue(DateraUtil.MAX_WRITE_BANDWIDTH,url);
     }
 }

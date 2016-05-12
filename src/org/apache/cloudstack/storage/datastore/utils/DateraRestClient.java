@@ -205,17 +205,17 @@ public class DateraRestClient {
        name = storageName;
      }
  }
-   public boolean getAppInstance(String appName)
+   public boolean isAppInstanceExists(String appName)
    {
       HttpGet getRequest = new HttpGet("/v2/app_instances/"+appName);
       getRequest.setHeader("Content-Type","application/json");
       getRequest.setHeader("auth-token",respLogin.getKey());
       String response = execute(getRequest);
-      GenericResponse resp = gson.fromJson(response, GenericResponse.class); 
-      
+      GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+
       return resp.name.equals(appName) ? true : false;
    }
- 
+
  public boolean createVolume(String appName, String storageInstance, String volName, int volSize)
  {
      HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances/"+storageInstance+"/volumes");

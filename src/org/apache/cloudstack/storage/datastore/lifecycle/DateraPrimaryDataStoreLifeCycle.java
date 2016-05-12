@@ -90,7 +90,6 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 
         DataCenterVO zone = zoneDao.findById(zoneId);
 
-        String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + "storageIP";
 
         if (capacityBytes == null || capacityBytes <= 0) {
             throw new IllegalArgumentException("'capacityBytes' must be present and greater than 0.");
@@ -107,14 +106,22 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         String managementUsername = DateraUtil.getValue(DateraUtil.MANAGEMENT_USERNAME, url);
         String managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
 
+        String networkPoolName = DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url);
+        int volReplica = DateraUtil.getReplica(url);
+        Long maxTotalIOPs = DateraUtil.getMaxTotalIOPs(url);
+        Long maxReadIOPs = DateraUtil.getMaxReadIOPs(url);
+        Long maxWriteIOPs = DateraUtil.getMaxWriteIOPs(url);
+        Long maxTotalBandWidth = DateraUtil.getMaxTotalBandwidth(url);
+        Long maxReadBandWidth = DateraUtil.getMaxReadBandwidth(url);
+        Long maxWriteBandWidth = DateraUtil.getMaxWriteBandwidth(url);
+
         PrimaryDataStoreParameters parameters = new PrimaryDataStoreParameters();
 
         //parameters.setHost(storageVip);
         //parameters.setPort(storagePort);
         //parameters.setPath(DateraUtil.getModifiedUrl(url));
-        parameters.setPath("/export/storage");
+        //parameters.setPath("/export/storage");
         parameters.setType(StoragePoolType.Iscsi);
-        parameters.setUuid(uuid);
         parameters.setZoneId(zoneId);
         parameters.setName(storagePoolName);
         parameters.setProviderName(providerName);
@@ -133,10 +140,27 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
         details.put(DateraUtil.MANAGEMENT_PASSWORD, managementPassword);
 
+        details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
+        details.put(DateraUtil.VOLUME_REPLICA,String.valueOf(volReplica));
+        details.put(DateraUtil.MAX_TOTAL_IOPS,String.valueOf(maxTotalIOPs));
+        details.put(DateraUtil.MAX_READ_IOPS,String.valueOf(maxReadIOPs));
+        details.put(DateraUtil.MAX_WRITE_IOPS,String.valueOf(maxWriteIOPs));
+        details.put(DateraUtil.MAX_TOTAL_BANDWIDTH,String.valueOf(maxTotalBandWidth));
+        details.put(DateraUtil.MAX_READ_BANDWIDTH,String.valueOf(maxReadBandWidth));
+        details.put(DateraUtil.MAX_WRITE_BANDWIDTH,String.valueOf(maxWriteBandWidth));
+
+
         DateraRestClient.StorageResponse storageInfo = createApplicationInstance(managementIP,managementPort,managementUsername,managementPassword,appInstanceName);
+
+        if(null == storageInfo.access.ips || null == storageInfo.access.iqn || 0 == storageInfo.access.ips.size() || 0 == storageInfo.access.iqn.length())
+            throw new CloudRuntimeException("Could not get Storage ip and iqn");
+
+        String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storageInfo.access.ips.get(0);
 
         parameters.setHost(storageInfo.access.ips.get(0));
         parameters.setPath(storageInfo.access.iqn);
+        parameters.setUuid(uuid);
+
 
        // this adds a row in the cloud.storage_pool table for this Datera cluster
         return dataStoreHelper.createPrimaryDataStore(parameters);
@@ -145,12 +169,15 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
     private StorageResponse createApplicationInstance(String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName) {
 
         DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
+        if(rest.isAppInstanceExists(appInstanceName))
+             throw new CloudRuntimeException("App name already exists : "+appInstanceName);
+
         rest.createAppInstance(appInstanceName);
         rest.createStorageInstance(appInstanceName, rest.defaultStorageName);
         rest.createVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName, 2);
         rest.setAdminState(appInstanceName, false);
         rest.deleteVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName);
-        rest.setAdminState(appInstanceName, false);
+        rest.setAdminState(appInstanceName, true);
         return rest.getStorageInfo(appInstanceName, rest.defaultStorageName);
      }
 
