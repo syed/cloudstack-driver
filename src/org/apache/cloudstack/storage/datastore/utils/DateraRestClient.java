@@ -402,7 +402,7 @@ private void setPayload(HttpPost request, String payload) {
        getRequest.setHeader("auth-token",respLogin.getKey());
        execute(getRequest);
  }
- public boolean createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
+ public StorageResponse createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
  {
        HttpPost postRequest = new HttpPost("/v2/app_instances");
        postRequest.setHeader("Content-type","application/json");
@@ -414,9 +414,9 @@ private void setPayload(HttpPost request, String payload) {
 
        String response = execute(postRequest);
 
-       GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+       StorageResponse resp = gson.fromJson(response, StorageResponse.class);
 
-       return resp.name.equals(appInstanceName);
+       return resp;
  }
 
  public String generateVolumePayload(String appInstanceName,

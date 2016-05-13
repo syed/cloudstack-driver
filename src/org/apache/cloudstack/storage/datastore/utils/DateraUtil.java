@@ -20,12 +20,35 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailVO;
+import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
+import org.apache.cloudstack.storage.datastore.utils.DateraUtil.DateraMetaData;
 
 import com.cloud.host.Host;
 import com.cloud.host.HostVO;
 import com.cloud.utils.exception.CloudRuntimeException;
 
 public class DateraUtil {
+    public static class DateraMetaData {
+     public String mangementIP;
+     public int managementPort;
+     public String managementUserName;
+     public String managementPassword;
+     public String storagePoolName;
+     public int replica;
+     public String networkPoolName;
+
+        public DateraMetaData(String ip, int port, String user, String pass, String storage,int paramReplica, String nwPoolName)
+        {
+            mangementIP = ip;
+            managementPort = port;
+            managementUserName = user;
+            managementPassword = pass;
+            storagePoolName = storage;
+            replica = paramReplica;
+            networkPoolName = nwPoolName;
+        }
+    }
     public static final String PROVIDER_NAME = "Datera";
 
     public static final String LOG_PREFIX = "Datera: ";
@@ -364,5 +387,31 @@ public class DateraUtil {
     public static Long getMaxWriteBandwidth(String url)
     {
         return getLongValue(DateraUtil.MAX_WRITE_BANDWIDTH,url);
+    }
+
+    public static DateraUtil.DateraMetaData getDateraCred(long storagePoolId, StoragePoolDetailsDao storagePoolDetailsDao) {
+
+        StoragePoolDetailVO storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_IP);
+        String managementIP = storagePoolDetail.getValue();
+
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_PORT);
+        int managementPort = Integer.parseInt(storagePoolDetail.getValue());
+
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_USERNAME);
+        String managementUserName = storagePoolDetail.getValue();
+
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_PASSWORD);
+        String managementPassword = storagePoolDetail.getValue();
+
+        String storagePoolName = storagePoolDetail.getName();
+
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.VOLUME_REPLICA);
+        int replica = Integer.parseInt(storagePoolDetail.getValue());
+
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.NETWORK_POOL_NAME);
+        String networkPoolName = storagePoolDetail.getValue();
+
+
+        return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName);
     }
 }

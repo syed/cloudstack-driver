@@ -158,7 +158,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         if(null == storageInfo.access.ips || null == storageInfo.access.iqn || 0 == storageInfo.access.ips.size() || 0 == storageInfo.access.iqn.length())
             throw new CloudRuntimeException("Could not get Storage ip and iqn");
 */
-        String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + managementIP;
+        String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storagePoolName;
 
         parameters.setHost(managementIP+"_"+storagePoolName);
         parameters.setPath(DateraUtil.getModifiedUrl(url));

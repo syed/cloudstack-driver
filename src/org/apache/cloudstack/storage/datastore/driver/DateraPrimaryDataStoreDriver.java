@@ -34,10 +34,12 @@ import org.apache.cloudstack.storage.command.CommandResult;
 import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
+import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.apache.log4j.Logger;
 
 import com.cloud.agent.api.Answer;
+import com.cloud.agent.api.to.DataObjectType;
 import com.cloud.agent.api.to.DataStoreTO;
 import com.cloud.agent.api.to.DataTO;
 import com.cloud.capacity.CapacityManager;
@@ -46,12 +48,14 @@ import com.cloud.dc.dao.ClusterDao;
 import com.cloud.host.Host;
 import com.cloud.host.HostVO;
 import com.cloud.host.dao.HostDao;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.storage.StoragePool;
 import com.cloud.storage.Volume;
 import com.cloud.storage.VolumeVO;
 import com.cloud.storage.dao.VolumeDao;
 import com.cloud.storage.dao.VolumeDetailsDao;
 import com.cloud.user.AccountDetailsDao;
+import com.cloud.user.AccountVO;
 import com.cloud.user.dao.AccountDao;
 import com.cloud.utils.exception.CloudRuntimeException;
 
@@ -245,46 +249,38 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     public void createAsync(DataStore dataStore, DataObject dataObject, AsyncCompletionCallback<CreateCmdResult> callback) {
         String iqn = null;
         String errMsg = null;
-/*
+
         if (dataObject.getType() == DataObjectType.VOLUME) {
             VolumeInfo volumeInfo = (VolumeInfo)dataObject;
             AccountVO account = _accountDao.findById(volumeInfo.getAccountId());
-            String dtAccountName = DateraUtil.getDateraAccountName(account.getUuid(), account.getAccountId());
 
+            Host host = getCurrentHostName();
             long storagePoolId = dataStore.getId();
 
-            DateraUtil.DateraConnection dtConnection = DateraUtil.getDateraConnection(storagePoolId, _storagePoolDetailsDao);
+            DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
 
-            AccountDetailVO accountDetail = DateraUtil.getAccountDetail(volumeInfo.getAccountId(), storagePoolId, _accountDetailsDao);
+            DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+            rest.registerInitiator(host.getUuid(), host.getStorageUrl());
 
-            if (accountDetail == null || accountDetail.getValue() == null) {
-                DateraUtil.DateraAccount dtAccount = DateraUtil.getDateraAccount(dtConnection, dtAccountName);
+            String dtAppInstanceName = dtMetaData.storagePoolName+"_"+volumeInfo.getUuid();
 
-                if (dtAccount == null) {
-                    dtAccount = createDateraAccount(dtConnection, dtAccountName);
-                }
 
-                //DateraUtil.updateCsDbWithDateraIopsInfo(storagePoolId, primaryDataStoreDao, storagePoolDetailsDao, minIops, maxIops, burstIops)DbWithDateraAccountInfo(account.getId(), sfAccount, storagePoolId, _accountDetailsDao);
 
-                accountDetail = DateraUtil.getAccountDetail(volumeInfo.getAccountId(), storagePoolId, _accountDetailsDao);
-            }
+            int volSize =  (int) volumeInfo.getSize().intValue();
+            DateraRestClient.StorageResponse storageInfo = rest.createVolume(dtAppInstanceName, null,null,volSize,dtMetaData.replica,"allow_all",dtMetaData.networkPoolName);
 
-            long dtAccountId = Long.parseLong(accountDetail.getValue());
-
-            DateraUtil.DateraVolume dtVolume = createDateraVolume(dtConnection, volumeInfo, dtAccountId);
-
-            iqn = dtVolume.getIqn();
+            iqn = storageInfo.access.iqn;
 
             VolumeVO volume = _volumeDao.findById(volumeInfo.getId());
 
             volume.set_iScsiName(iqn);
-            volume.setFolder(String.valueOf(dtVolume.getId()));
+            //volume.setFolder(String.valueOf(dtVolume.getId()));
             volume.setPoolType(StoragePoolType.IscsiLUN);
             volume.setPoolId(storagePoolId);
 
             _volumeDao.update(volume.getId(), volume);
 
-            updateVolumeDetails(volume.getId(), dtVolume.getTotalSize());
+            //updateVolumeDetails(volume.getId(), dtVolume.getTotalSize());
 
             StoragePoolVO storagePool = _storagePoolDao.findById(dataStore.getId());
 
@@ -299,7 +295,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         } else {
             errMsg = "Invalid DataObjectType (" + dataObject.getType() + ") passed to createAsync";
         }
-*/
+
         // path = iqn
         // size is pulled from DataObject instance, if errMsg is null
         CreateCmdResult result = new CreateCmdResult(iqn, new Answer(null, errMsg == null, errMsg));
@@ -307,6 +303,11 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         result.setResult(errMsg);
 
         callback.complete(result);
+    }
+
+    private Host getCurrentHostName() {
+
+       return null;
     }
 
     @Override
