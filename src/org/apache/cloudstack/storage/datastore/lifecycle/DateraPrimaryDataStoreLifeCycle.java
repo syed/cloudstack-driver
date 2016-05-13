@@ -32,7 +32,6 @@ import org.apache.cloudstack.engine.subsystem.api.storage.PrimaryDataStoreLifeCy
 import org.apache.cloudstack.engine.subsystem.api.storage.PrimaryDataStoreParameters;
 import org.apache.cloudstack.engine.subsystem.api.storage.ZoneScope;
 import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDao;
-import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailVO;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
@@ -104,11 +103,12 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         String managementIP = DateraUtil.getManagementIP(url);
         int managementPort = DateraUtil.getManagementPort(url);
 
-        String appInstanceName = DateraUtil.getValue(DateraUtil.APP_NAME, url);
+//        String appInstanceName = DateraUtil.getValue(DateraUtil.APP_NAME, url);
         String managementUsername = DateraUtil.getValue(DateraUtil.MANAGEMENT_USERNAME, url);
         String managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
 
         String networkPoolName = DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url);
+/*
         int volReplica = DateraUtil.getReplica(url);
         Long maxTotalIOPs = DateraUtil.getMaxTotalIOPs(url);
         Long maxReadIOPs = DateraUtil.getMaxReadIOPs(url);
@@ -116,7 +116,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         Long maxTotalBandWidth = DateraUtil.getMaxTotalBandwidth(url);
         Long maxReadBandWidth = DateraUtil.getMaxReadBandwidth(url);
         Long maxWriteBandWidth = DateraUtil.getMaxWriteBandwidth(url);
-
+*/
         PrimaryDataStoreParameters parameters = new PrimaryDataStoreParameters();
 
         //parameters.setHost(storageVip);
@@ -141,27 +141,27 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         details.put(DateraUtil.MANAGEMENT_PORT,String.valueOf(managementPort));
         details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
         details.put(DateraUtil.MANAGEMENT_PASSWORD, managementPassword);
-        details.put(DateraUtil.APP_NAME, appInstanceName);
+//        details.put(DateraUtil.APP_NAME, appInstanceName);
 
         details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
-        details.put(DateraUtil.VOLUME_REPLICA,String.valueOf(volReplica));
+/*        details.put(DateraUtil.VOLUME_REPLICA,String.valueOf(volReplica));
         details.put(DateraUtil.MAX_TOTAL_IOPS,String.valueOf(maxTotalIOPs));
         details.put(DateraUtil.MAX_READ_IOPS,String.valueOf(maxReadIOPs));
         details.put(DateraUtil.MAX_WRITE_IOPS,String.valueOf(maxWriteIOPs));
         details.put(DateraUtil.MAX_TOTAL_BANDWIDTH,String.valueOf(maxTotalBandWidth));
         details.put(DateraUtil.MAX_READ_BANDWIDTH,String.valueOf(maxReadBandWidth));
         details.put(DateraUtil.MAX_WRITE_BANDWIDTH,String.valueOf(maxWriteBandWidth));
+*/
 
-
-        DateraRestClient.StorageResponse storageInfo = createApplicationInstance(managementIP,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName);
+/*        DateraRestClient.StorageResponse storageInfo = createApplicationInstance(managementIP,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName);
 
         if(null == storageInfo.access.ips || null == storageInfo.access.iqn || 0 == storageInfo.access.ips.size() || 0 == storageInfo.access.iqn.length())
             throw new CloudRuntimeException("Could not get Storage ip and iqn");
+*/
+        String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + managementIP;
 
-        String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storageInfo.access.ips.get(0);
-
-        parameters.setHost(storageInfo.access.ips.get(0));
-        parameters.setPath(storageInfo.access.iqn);
+        parameters.setHost(managementIP+"_"+storagePoolName);
+        parameters.setPath(DateraUtil.getModifiedUrl(url));
         parameters.setUuid(uuid);
 
 
@@ -275,7 +275,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
     public boolean deleteDataStore(DataStore store) {
 
         long storagePoolId = store.getId();
-
+/*
         StoragePoolDetailVO storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_IP);
         String managementIP = storagePoolDetail.getValue();
 
@@ -294,7 +294,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         DateraRestClient rest = new DateraRestClient(managementIP,managementPort,managementUserName,managementPassword);
         rest.setAdminState(appInstanceName, false);
         rest.deleteAppInstance(appInstanceName);
-
+*/
         return dataStoreHelper.deletePrimaryDataStore(store);
     }
 
