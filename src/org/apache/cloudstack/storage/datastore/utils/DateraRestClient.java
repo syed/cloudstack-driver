@@ -178,6 +178,7 @@ public class DateraRestClient {
  public class GenericResponse
  {
   public String name;
+  public String id;
  }
 
  public class VolumeResize
@@ -207,6 +208,40 @@ public class DateraRestClient {
      {
        name = storageName;
      }
+ }
+ public class InitiatorModel
+ {
+    public String id;
+    public String name;
+   public InitiatorModel(String label, String iqn)
+   {
+     name = label;
+     id = iqn;
+   }
+ }
+ public boolean unregisterInitiator(String iqn)
+ {
+    HttpDelete deleteRequest = new HttpDelete("/v2/initiators/"+iqn);
+    deleteRequest.setHeader("Content-Type","application/json");
+    deleteRequest.setHeader("auth-token",respLogin.getKey());
+    String response = execute(deleteRequest);
+    GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+
+    return resp.id.equals(iqn) ? true : false;
+ }
+ public boolean registerInitiator(String labelName, String iqn)
+ {
+    HttpPost postRequest = new HttpPost("/v2/initiators");
+    postRequest.setHeader("Content-Type","application/json");
+    postRequest.setHeader("auth-token",respLogin.getKey());
+
+    InitiatorModel initiator = new InitiatorModel(labelName, iqn);
+    String payload = gson.toJson(initiator);
+    setPayload(postRequest, payload);
+    String response = execute(postRequest);
+    GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+
+    return resp.name.equals(labelName) ? true : false;
  }
    public boolean isAppInstanceExists(String appName)
    {
@@ -367,7 +402,7 @@ private void setPayload(HttpPost request, String payload) {
        getRequest.setHeader("auth-token",respLogin.getKey());
        execute(getRequest);
  }
- public void createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
+ public boolean createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
  {
        HttpPost postRequest = new HttpPost("/v2/app_instances");
        postRequest.setHeader("Content-type","application/json");
@@ -375,10 +410,13 @@ private void setPayload(HttpPost request, String payload) {
 
        String payload = generateVolumePayload(appInstanceName,initiators,initiatorGroups,volumeGB,volReplica,accessControlMode,networkPoolName);
 
-  setPayload(postRequest, payload);
+       setPayload(postRequest, payload);
 
-       execute(postRequest);
+       String response = execute(postRequest);
 
+       GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+
+       return resp.name.equals(appInstanceName);
  }
 
  public String generateVolumePayload(String appInstanceName,
