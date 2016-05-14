@@ -109,9 +109,9 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         String managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
 
         String networkPoolName = DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url);
-/*
+
         int volReplica = DateraUtil.getReplica(url);
-        Long maxTotalIOPs = DateraUtil.getMaxTotalIOPs(url);
+/*        Long maxTotalIOPs = DateraUtil.getMaxTotalIOPs(url);
         Long maxReadIOPs = DateraUtil.getMaxReadIOPs(url);
         Long maxWriteIOPs = DateraUtil.getMaxWriteIOPs(url);
         Long maxTotalBandWidth = DateraUtil.getMaxTotalBandwidth(url);
@@ -137,7 +137,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         parameters.setDetails(details);
 
 
-
+        details.put(DateraUtil.STORAGE_POOL_NAME, storagePoolName);
         details.put(DateraUtil.MANAGEMENT_IP, managementIP);
         details.put(DateraUtil.MANAGEMENT_PORT,String.valueOf(managementPort));
         details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
@@ -145,8 +145,8 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 //        details.put(DateraUtil.APP_NAME, appInstanceName);
 
         details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
-/*        details.put(DateraUtil.VOLUME_REPLICA,String.valueOf(volReplica));
-        details.put(DateraUtil.MAX_TOTAL_IOPS,String.valueOf(maxTotalIOPs));
+        details.put(DateraUtil.VOLUME_REPLICA,String.valueOf(volReplica));
+/*        details.put(DateraUtil.MAX_TOTAL_IOPS,String.valueOf(maxTotalIOPs));
         details.put(DateraUtil.MAX_READ_IOPS,String.valueOf(maxReadIOPs));
         details.put(DateraUtil.MAX_WRITE_IOPS,String.valueOf(maxWriteIOPs));
         details.put(DateraUtil.MAX_TOTAL_BANDWIDTH,String.valueOf(maxTotalBandWidth));
@@ -167,7 +167,10 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 
 
        // this adds a row in the cloud.storage_pool table for this Datera cluster
-        return dataStoreHelper.createPrimaryDataStore(parameters);
+        DataStore dataStore = dataStoreHelper.createPrimaryDataStore(parameters);
+
+        //DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(dataStore.getId(), _storagePoolDetailsDao);
+        return dataStore;
     }
 
     private AppInstanceInfo.StorageInstance createApplicationInstance(String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName, String networkPoolName) {

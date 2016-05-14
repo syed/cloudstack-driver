@@ -53,6 +53,8 @@ public class DateraUtil {
 
     public static final String LOG_PREFIX = "Datera: ";
 
+    public static final String STORAGE_POOL_NAME = "storagePoolName";
+
     public static final String MANAGEMENT_IP = "mgmtIP";
 
     public static final String MANAGEMENT_PORT = "mgmtPort";
@@ -404,7 +406,8 @@ public class DateraUtil {
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_PASSWORD);
         String managementPassword = storagePoolDetail.getValue();
 
-        String storagePoolName = storagePoolDetail.getName();
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.STORAGE_POOL_NAME);
+        String storagePoolName = storagePoolDetail.getValue();
 
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.VOLUME_REPLICA);
         int replica = Integer.parseInt(storagePoolDetail.getValue());
