@@ -357,14 +357,14 @@ private void setPayload(HttpPut request, String payload) {
   return respObj.name.equals(volumeInstance) ? true : false;
 
  }
- public StorageResponse getStorageInfo(String appInstance, String storageInstance)
+ public AppInstanceInfo.StorageInstance getStorageInfo(String appInstance, String storageInstance)
  {
   String restPath = String.format("/v2/app_instances/%s/storage_instances/%s", appInstance,storageInstance);
   HttpGet getRequest = new HttpGet(restPath);
         getRequest.setHeader("auth-token",respLogin.getKey());
         String response = execute(getRequest);
 
-        StorageResponse storageInfo = gson.fromJson(response, StorageResponse.class);
+        AppInstanceInfo.StorageInstance storageInfo = gson.fromJson(response, AppInstanceInfo.StorageInstance.class);
 
         return storageInfo;
  }
@@ -402,7 +402,7 @@ private void setPayload(HttpPost request, String payload) {
        getRequest.setHeader("auth-token",respLogin.getKey());
        execute(getRequest);
  }
- public StorageResponse createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
+ public AppInstanceInfo createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
  {
        HttpPost postRequest = new HttpPost("/v2/app_instances");
        postRequest.setHeader("Content-type","application/json");
@@ -414,7 +414,7 @@ private void setPayload(HttpPost request, String payload) {
 
        String response = execute(postRequest);
 
-       StorageResponse resp = gson.fromJson(response, StorageResponse.class);
+       AppInstanceInfo resp = gson.fromJson(response, AppInstanceInfo.class);
 
        return resp;
  }
