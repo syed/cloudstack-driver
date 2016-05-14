@@ -34,6 +34,7 @@ import org.apache.cloudstack.engine.subsystem.api.storage.ZoneScope;
 import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
+import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient.StorageResponse;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
@@ -169,7 +170,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         return dataStoreHelper.createPrimaryDataStore(parameters);
     }
 
-    private StorageResponse createApplicationInstance(String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName, String networkPoolName) {
+    private AppInstanceInfo.StorageInstance createApplicationInstance(String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName, String networkPoolName) {
 
         DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
         if(rest.isAppInstanceExists(appInstanceName))
@@ -185,7 +186,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         return rest.getStorageInfo(appInstanceName, rest.defaultStorageName);
      }
 
-    private StorageResponse createDateraVolume(String storageVip, int storagePort, String clusterAdminUsername,
+    private AppInstanceInfo.StorageInstance createDateraVolume(String storageVip, int storagePort, String clusterAdminUsername,
         String clusterAdminPassword, String appName) {
         StorageResponse resp = null;
 

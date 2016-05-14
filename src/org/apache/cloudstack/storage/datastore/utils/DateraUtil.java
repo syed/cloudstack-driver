@@ -81,6 +81,7 @@ public class DateraUtil {
     private static final int DEFAULT_MANAGEMENT_PORT = 7718;
     private static final int DEFAULT_STORAGE_PORT = 3260;
 
+    public static final String VOLUME_SIZE_NAME = "dateraVolumeSize";
 
 
     private static String getVip(String keyToMatch, String url) {
@@ -413,5 +414,14 @@ public class DateraUtil {
 
 
         return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName);
+    }
+    
+    public static String generateInitiatorName(String hostUUID)
+    {
+       return "cs_datera_"+hostUUID;
+    }
+    public static String generateAppInstanceName(String storagePoolName, String volumeUUD)
+    {
+       return storagePoolName+"_"+volumeUUD;
     }
 }
