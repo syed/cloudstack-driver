@@ -415,7 +415,7 @@ public class DateraUtil {
 
         return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName);
     }
-    
+
     public static String generateInitiatorName(String hostUUID)
     {
        return "cs_datera_"+hostUUID;

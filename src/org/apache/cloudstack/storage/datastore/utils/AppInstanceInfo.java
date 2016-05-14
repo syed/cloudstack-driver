@@ -8,7 +8,7 @@ public class AppInstanceInfo {
 
  @SerializedName("storage_instances")
  public StorageInstances storageInstances;
- 
+
  public String path;
  public String name;
  public String descr;
@@ -18,13 +18,13 @@ public class AppInstanceInfo {
  public String health;
  @SerializedName("admin_state")
  public String adminState;
- 
+
  public class StorageInstances
  {
   @SerializedName("storage-1")
   public StorageInstance storage1;
  }
- 
+
  public class StorageInstance
  {
   public AccessInfo access;
@@ -43,19 +43,19 @@ public class AppInstanceInfo {
   @SerializedName("creation_type")
   public String creationType;
  }
- 
+
  public class AccessInfo
  {
   public List<String> ips;
   public String iqn;
  }
- 
+
  public class VolumeInstances
  {
   @SerializedName("volume-1")
   public VolumeInfo volume1;
  }
- 
+
  public class VolumeInfo
  {
   public String path;
