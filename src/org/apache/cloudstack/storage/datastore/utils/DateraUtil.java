@@ -427,4 +427,12 @@ public class DateraUtil {
     {
        return storagePoolName+"_"+volumeUUD;
     }
+    public static Long getVolumeSizeInBytes(int dtVolSize)
+    {
+         return (long)(dtVolSize*1024*1024*1024);
+    }
+    public static int getVolumeSizeInGB(Long csVolSize)
+    {
+        return (int)(csVolSize/(1024*1024*1024));
+    }
 }

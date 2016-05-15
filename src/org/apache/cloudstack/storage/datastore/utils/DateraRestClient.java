@@ -11,6 +11,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.cloudstack.storage.datastore.driver.DateraPrimaryDataStoreDriver;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -29,12 +30,14 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.BasicClientConnectionManager;
 import org.apache.http.util.EntityUtils;
+import org.apache.log4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 
 public class DateraRestClient {
+    private static final Logger s_logger = Logger.getLogger(DateraPrimaryDataStoreDriver.class);
 
     private Gson gson = new GsonBuilder().create();
     private LoginResponse respLogin = new LoginResponse();
@@ -408,12 +411,15 @@ private void setPayload(HttpPost request, String payload) {
        postRequest.setHeader("Content-type","application/json");
        postRequest.setHeader("auth-token",respLogin.getKey());
 
+       networkPoolName = "/access_network_ip_pools/"+networkPoolName;
        String payload = generateVolumePayload(appInstanceName,initiators,initiatorGroups,volumeGB,volReplica,accessControlMode,networkPoolName);
 
+       s_logger.info("DateraRestClient.createVolume payload ="+ payload);
        setPayload(postRequest, payload);
 
        String response = execute(postRequest);
 
+       s_logger.info("DateraRestClient.createVolume response ="+ response);
        AppInstanceInfo resp = gson.fromJson(response, AppInstanceInfo.class);
 
        return resp;

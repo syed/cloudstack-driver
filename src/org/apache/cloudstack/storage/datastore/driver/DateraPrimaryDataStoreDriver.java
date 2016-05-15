@@ -106,7 +106,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         if (volumeInfo == null || host == null || dataStore == null) {
             return false;
         }
-
+        s_logger.info("Begin connectVolumeToHost host iqn = "+host.getStorageUrl());
         long dtVolumeId = Long.parseLong(volumeInfo.getFolder());
         long clusterId = host.getClusterId();
         long storagePoolId = dataStore.getId();
@@ -118,7 +118,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
 
         if (!DateraUtil.hostsSupport_iScsi(hosts)) {
-            return false;
+           return false;
         }
 /*
         DateraUtil.DateraConnection dtConnection = DateraUtil.getDateraConnection(storagePoolId, _storagePoolDetailsDao);
@@ -142,6 +142,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         rest.registerInitiator(DateraUtil.generateInitiatorName(host.getUuid()), host.getStorageUrl());
 
+        s_logger.info("End connectVolumeToHost ");
         return true;
     }
 
@@ -152,8 +153,9 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     public synchronized void disconnectVolumeFromHost(VolumeInfo volumeInfo, Host host, DataStore dataStore)
     {
         if (volumeInfo == null || host == null || dataStore == null) {
-            return;
+           return;
         }
+        s_logger.info("Begin disconnectVolumeFromHost host iqn ="+host.getStorageUrl());
 /*
         long dtVolumeId = Long.parseLong(volumeInfo.getFolder());
         long clusterId = host.getClusterId();
@@ -176,18 +178,16 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             DateraUtil.modifyDateraVag(dtConnection, dtVag.getId(), hostIqns, volumeIds);
         }
 */
-        long storagePoolId = dataStore.getId();
+/*        long storagePoolId = dataStore.getId();
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         rest.unregisterInitiator(host.getStorageUrl());
-
-
+*/
     }
 
     @Override
     public long getUsedBytes(StoragePool storagePool) {
         long usedSpace = 0;
-
         List<VolumeVO> lstVolumes = _volumeDao.findByPoolId(storagePool.getId(), null);
 
         if (lstVolumes != null) {
@@ -217,7 +217,6 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             volumeSize += volumeSize * (hypervisorSnapshotReserve / 100f);
         }
-
         return volumeSize;
     }
 
@@ -269,6 +268,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             long storagePoolId = dataStore.getId();
 
+
             DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
 
             DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
@@ -277,12 +277,14 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             String dtAppInstanceName = DateraUtil.generateAppInstanceName(dtMetaData.storagePoolName,volumeInfo.getUuid());
 
 
+            //int volSize =  (int) volumeInfo.getSize().intValue();
+            int volSize =  DateraUtil.getVolumeSizeInGB(volumeInfo.getSize());
 
-            int volSize =  (int) volumeInfo.getSize().intValue();
             rest.createVolume(dtAppInstanceName, null,null,volSize,dtMetaData.replica,"allow_all",dtMetaData.networkPoolName);
+
             AppInstanceInfo.StorageInstance storageInfo = rest.getStorageInfo(dtAppInstanceName, rest.defaultStorageName);
 
-            if(storageInfo.access.iqn == null || storageInfo.access.iqn.isEmpty())
+            if(null == storageInfo || null == storageInfo.access || storageInfo.access.iqn == null || storageInfo.access.iqn.isEmpty())
             {
                 throw new CloudRuntimeException("IQN not generated on the storage.");
             }
@@ -293,6 +295,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             }
 
             iqn = storageInfo.access.iqn;
+            s_logger.info(dtAppInstanceName+ " Storage IP and iqn  createAsync " +iqn + ", "+storageInfo.access.ips.get(0));
 
             VolumeVO csVolume = _volumeDao.findById(volumeInfo.getId());
 
@@ -303,8 +306,9 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             _volumeDao.update(csVolume.getId(), csVolume);
 
-            updateVolumeDetails(csVolume.getId(), storageInfo.volumes.volume1.size);
 
+            updateVolumeDetails(csVolume.getId(), DateraUtil.getVolumeSizeInBytes(storageInfo.volumes.volume1.size));
+/*
             StoragePoolVO storagePool = _storagePoolDao.findById(dataStore.getId());
 
             long capacityBytes = storagePool.getCapacityBytes();
@@ -312,10 +316,11 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             // updateVolumeDetails(long, long) has already been called for this volume
             long usedBytes = getUsedBytes(storagePool);
 
-            storagePool.setHostAddress(storageInfo.access.ips.get(0));
+            //storagePool.setHostAddress(storageInfo.access.ips.get(0));
             storagePool.setUsedBytes(usedBytes > capacityBytes ? capacityBytes : usedBytes);
 
             _storagePoolDao.update(storagePoolId, storagePool);
+*/
         } else {
             errMsg = "Invalid DataObjectType (" + dataObject.getType() + ") passed to createAsync";
         }
@@ -327,6 +332,8 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         result.setResult(errMsg);
 
         callback.complete(result);
+
+
     }
 
 
