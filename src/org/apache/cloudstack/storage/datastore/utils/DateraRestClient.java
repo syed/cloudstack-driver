@@ -32,6 +32,7 @@ import org.apache.http.impl.conn.BasicClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 
+import com.cloud.utils.exception.CloudRuntimeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
@@ -228,6 +229,7 @@ public class DateraRestClient {
     deleteRequest.setHeader("Content-Type","application/json");
     deleteRequest.setHeader("auth-token",respLogin.getKey());
     String response = execute(deleteRequest);
+    s_logger.info("DateraRestClient.unregisterInitiator response ="+response);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
 
     return resp.id.equals(iqn) ? true : false;
@@ -458,12 +460,17 @@ private void setPayload(HttpPost request, String payload) {
   }
 
   String resp = execute(postRequest);
+  s_logger.info("DateraRestClient.doLogin response ="+resp);
   if(null != resp)
   {
    respLogin = gson.fromJson(resp, LoginResponse.class);
   }
 
-  System.out.println("The session key :"+respLogin.getKey());
+  if(null == respLogin || null == respLogin.getKey())
+  {
+     throw new CloudRuntimeException("Could not login to datera node");
+  }
+  //System.out.println("The session key :"+respLogin.getKey());
 
  }
  private String execute(HttpRequest request)

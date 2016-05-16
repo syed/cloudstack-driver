@@ -124,6 +124,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         //parameters.setPort(storagePort);
         //parameters.setPath(DateraUtil.getModifiedUrl(url));
         //parameters.setPath("/export/storage");
+        parameters.setPort(3260);
         parameters.setType(StoragePoolType.Iscsi);
         parameters.setZoneId(zoneId);
         parameters.setName(storagePoolName);
@@ -162,6 +163,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storagePoolName;
 
         parameters.setHost(managementIP+"_"+storagePoolName);
+
         parameters.setPath(DateraUtil.getModifiedUrl(url));
         parameters.setUuid(uuid);
 

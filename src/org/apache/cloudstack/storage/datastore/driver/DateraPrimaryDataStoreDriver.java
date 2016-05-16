@@ -300,7 +300,8 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             VolumeVO csVolume = _volumeDao.findById(volumeInfo.getId());
 
             csVolume.set_iScsiName(iqn);
-            csVolume.setFolder(storageInfo.volumes.volume1.uuid);
+            //csVolume.setFolder(storageInfo.volumes.volume1.uuid);
+            csVolume.setFolder("199");
             csVolume.setPoolType(StoragePoolType.IscsiLUN);
             csVolume.setPoolId(storagePoolId);
 
@@ -308,19 +309,19 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
 
             updateVolumeDetails(csVolume.getId(), DateraUtil.getVolumeSizeInBytes(storageInfo.volumes.volume1.size));
-/*
+
             StoragePoolVO storagePool = _storagePoolDao.findById(dataStore.getId());
 
-            long capacityBytes = storagePool.getCapacityBytes();
+//            long capacityBytes = storagePool.getCapacityBytes();
             // getUsedBytes(StoragePool) will include the bytes of the newly created volume because
             // updateVolumeDetails(long, long) has already been called for this volume
-            long usedBytes = getUsedBytes(storagePool);
+//            long usedBytes = getUsedBytes(storagePool);
 
-            //storagePool.setHostAddress(storageInfo.access.ips.get(0));
-            storagePool.setUsedBytes(usedBytes > capacityBytes ? capacityBytes : usedBytes);
+            storagePool.setHostAddress(storageInfo.access.ips.get(0));
+//            storagePool.setUsedBytes(usedBytes > capacityBytes ? capacityBytes : usedBytes);
 
             _storagePoolDao.update(storagePoolId, storagePool);
-*/
+
         } else {
             errMsg = "Invalid DataObjectType (" + dataObject.getType() + ") passed to createAsync";
         }
