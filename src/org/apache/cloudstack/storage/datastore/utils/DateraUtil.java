@@ -419,7 +419,7 @@ public class DateraUtil {
         return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName);
     }
 
-    public static String generateInitiatorName(String hostUUID)
+    public static String generateInitiatorLabel(String hostUUID)
     {
        return "cs_datera_"+hostUUID;
     }
@@ -434,5 +434,9 @@ public class DateraUtil {
     public static int getVolumeSizeInGB(Long csVolSize)
     {
         return (int)(csVolSize/(1024*1024*1024));
+    }
+    public static String constructInitiatorName(String hostIqn)
+    {
+        return "/initiators/"+hostIqn;
     }
 }

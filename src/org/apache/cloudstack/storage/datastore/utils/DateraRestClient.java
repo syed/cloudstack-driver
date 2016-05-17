@@ -261,6 +261,7 @@ public class DateraRestClient {
     String payload = gson.toJson(initiator);
     setPayload(postRequest, payload);
     String response = execute(postRequest);
+    s_logger.info("DateraRestClient.registerInitiator response ="+response);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
 
     return resp.name.equals(labelName) ? true : false;

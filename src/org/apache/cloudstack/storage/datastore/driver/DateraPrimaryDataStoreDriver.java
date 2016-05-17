@@ -16,6 +16,7 @@
 // under the License.
 package org.apache.cloudstack.storage.datastore.driver;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -138,10 +139,17 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         }
 */
 
+        if(null == host.getStorageUrl())
+        {
+            throw new CloudRuntimeException("Host iqn not available, cannot register the host");
+        }
+        List<String> initiators = new ArrayList<String>();
+        initiators.add(DateraUtil.constructInitiatorName(host.getStorageUrl()));
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
-        rest.registerInitiator(DateraUtil.generateInitiatorName(host.getUuid()), host.getStorageUrl());
+        rest.registerInitiator(DateraUtil.generateInitiatorLabel(host.getUuid()), host.getStorageUrl());
 
+        rest.updateStorageWithInitiator(DateraUtil.generateAppInstanceName(dtMetaData.storagePoolName, volumeInfo.getUuid()), rest.defaultStorageName, initiators);
         s_logger.info("End connectVolumeToHost ");
         return true;
     }
@@ -178,6 +186,11 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             DateraUtil.modifyDateraVag(dtConnection, dtVag.getId(), hostIqns, volumeIds);
         }
 */
+        if(null == host.getStorageUrl())
+        {
+            throw new CloudRuntimeException("Host iqn not available, cannot unregister the host");
+        }
+
 /*        long storagePoolId = dataStore.getId();
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
@@ -187,6 +200,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
     @Override
     public long getUsedBytes(StoragePool storagePool) {
+        s_logger.info("_Datera Begin getUsedBytes");
         long usedSpace = 0;
         List<VolumeVO> lstVolumes = _volumeDao.findByPoolId(storagePool.getId(), null);
 
@@ -201,12 +215,14 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 }
             }
         }
+        s_logger.info("_Datera End getUsedBytes usedSpace ="+usedSpace);
 
         return usedSpace;
     }
 
     @Override
     public long getVolumeSizeIncludingHypervisorSnapshotReserve(Volume volume, StoragePool pool) {
+        s_logger.info("_Datera Begin getVolumeSizeIncludingHypervisorSnapshotReserve");
         long volumeSize = volume.getSize();
         Integer hypervisorSnapshotReserve = volume.getHypervisorSnapshotReserve();
 
@@ -217,6 +233,8 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             volumeSize += volumeSize * (hypervisorSnapshotReserve / 100f);
         }
+        s_logger.info("_Datera End getVolumeSizeIncludingHypervisorSnapshotReserve volumeSize ="+volumeSize);
+
         return volumeSize;
     }
 
@@ -299,7 +317,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             VolumeVO csVolume = _volumeDao.findById(volumeInfo.getId());
 
-            csVolume.set_iScsiName(iqn);
+            csVolume.set_iScsiName("/"+iqn+"/0");
             //csVolume.setFolder(storageInfo.volumes.volume1.uuid);
             csVolume.setFolder("199");
             csVolume.setPoolType(StoragePoolType.IscsiLUN);
@@ -318,6 +336,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 //            long usedBytes = getUsedBytes(storagePool);
 
             storagePool.setHostAddress(storageInfo.access.ips.get(0));
+            storagePool.setPath("/"+iqn+"/0");
 //            storagePool.setUsedBytes(usedBytes > capacityBytes ? capacityBytes : usedBytes);
 
             _storagePoolDao.update(storagePoolId, storagePool);
