@@ -27,21 +27,42 @@ public class AppInstanceInfo {
 
  public class StorageInstance
  {
-  public AccessInfo access;
+  public String path;
   public VolumeInstances volumes;
-
+  @SerializedName("active_initiators")
+  public List<String> activeInitiators;
+  @SerializedName("active_storage_nodes")
+  public List<String> activeStorageNodes;
+  public AccessInfo access;
   public String name;
   public String uuid;
+  @SerializedName("acl_policy")
+  public ACLPolicy aclPolicy;
   @SerializedName("admin_state")
   public String adminState;
   @SerializedName("access_control_mode")
   public String accessControlMode;
   @SerializedName("ip_pool")
   public String ipPool;
+  public StorageAuthentication auth;
   @SerializedName("op_state")
   public String opState;
   @SerializedName("creation_type")
   public String creationType;
+ }
+
+ public class StorageAuthentication
+ {
+     public String path;
+     public String type;
+     @SerializedName("target_user_name")
+     public String targetUserName;
+     @SerializedName("target_pswd")
+     public String targetPswd;
+     @SerializedName("initiator_user_name")
+     public String initiatorUserName;
+     @SerializedName("initiator_pswd")
+     public String initiatorPswd;
  }
 
  public class AccessInfo

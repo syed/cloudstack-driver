@@ -223,6 +223,23 @@ public class DateraRestClient {
      id = iqn;
    }
  }
+ public boolean updateStorageWithInitiator(String appInstance, String storageInstance, List<String> initiators)
+ {
+      //setAdminState(appInstance, false);
+      StorageInitiator storage = new StorageInitiator(initiators,null);
+
+      HttpPut putRequest = new HttpPut("/v2/app_instances/"+appInstance+"/storage_instances/"+storageInstance);
+      putRequest.setHeader("Content-Type","application/json");
+      putRequest.setHeader("auth-token",respLogin.getKey());
+      String payload = gson.toJson(storage);
+
+      setPayload(putRequest, payload);
+
+      String response = execute(putRequest);
+      GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+      return respObj.name.equals(storageInstance) ? true : false;
+
+ }
  public boolean unregisterInitiator(String iqn)
  {
     HttpDelete deleteRequest = new HttpDelete("/v2/initiators/"+iqn);
