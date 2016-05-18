@@ -252,8 +252,8 @@ public class DateraRestClient {
        String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes", appInstance,storageInstance);
        HttpGet getRequest = new HttpGet(restPath);
        getRequest.setHeader("auth-token",respLogin.getKey());
-	   String response = execute(getRequest);
-	   return getVolumeList(response);
+       String response = execute(getRequest);
+       return getVolumeList(response);
 
   }
  public boolean updateStorageWithInitiator(String appInstance, String storageInstance, List<String> initiators)
@@ -615,17 +615,17 @@ private void setPayload(HttpPost request, String payload) {
         List<AppInstanceInfo.VolumeInfo> volumes = new ArrayList<AppInstanceInfo.VolumeInfo>();
         try
         {
-	        GsonBuilder gsonBuilder = new GsonBuilder();
-	        Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
-	        gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
-	        Gson gson1 = gsonBuilder.create();
+            GsonBuilder gsonBuilder = new GsonBuilder();
+            Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
+            gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
+            Gson gson1 = gsonBuilder.create();
 
-	        Map<String, Object> map = gson1.fromJson(volumesJson, mapStringObjectType);
-	        for (Map.Entry<String, Object> entry : map.entrySet()) {
-	            String volJson = entry.getValue().toString();
-	            AppInstanceInfo.VolumeInfo vol = gson1.fromJson(volJson, AppInstanceInfo.VolumeInfo.class);
-	            volumes.add(vol);
-	       }
+            Map<String, Object> map = gson1.fromJson(volumesJson, mapStringObjectType);
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                String volJson = entry.getValue().toString();
+                AppInstanceInfo.VolumeInfo vol = gson1.fromJson(volJson, AppInstanceInfo.VolumeInfo.class);
+                volumes.add(vol);
+          }
         }
         catch(Exception ex)
         {

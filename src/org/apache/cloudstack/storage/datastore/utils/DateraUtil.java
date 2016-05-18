@@ -37,8 +37,9 @@ public class DateraUtil {
      public String storagePoolName;
      public int replica;
      public String networkPoolName;
+     public String appInstanceName;
 
-        public DateraMetaData(String ip, int port, String user, String pass, String storage,int paramReplica, String nwPoolName)
+        public DateraMetaData(String ip, int port, String user, String pass, String storage,int paramReplica, String nwPoolName, String appInstanceName)
         {
             mangementIP = ip;
             managementPort = port;
@@ -47,6 +48,7 @@ public class DateraUtil {
             storagePoolName = storage;
             replica = paramReplica;
             networkPoolName = nwPoolName;
+            this.appInstanceName = appInstanceName;
         }
     }
     public static final String PROVIDER_NAME = "Datera";
@@ -415,8 +417,10 @@ public class DateraUtil {
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.NETWORK_POOL_NAME);
         String networkPoolName = storagePoolDetail.getValue();
 
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.APP_NAME);
+        String appInstanceName = storagePoolDetail.getValue();
 
-        return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName);
+        return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName,appInstanceName);
     }
 
     public static String generateInitiatorLabel(String hostUUID)

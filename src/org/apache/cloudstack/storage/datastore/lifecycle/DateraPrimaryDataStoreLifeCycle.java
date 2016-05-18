@@ -108,6 +108,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         String managementUsername = DateraUtil.getValue(DateraUtil.MANAGEMENT_USERNAME, url);
         String managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
 
+        String appInstanceName = storagePoolName;
         String networkPoolName = DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url);
 
         int volReplica = DateraUtil.getReplica(url);
@@ -138,6 +139,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         parameters.setDetails(details);
 
 
+        details.put(DateraUtil.APP_NAME, storagePoolName);
         details.put(DateraUtil.STORAGE_POOL_NAME, storagePoolName);
         details.put(DateraUtil.MANAGEMENT_IP, managementIP);
         details.put(DateraUtil.MANAGEMENT_PORT,String.valueOf(managementPort));
@@ -162,9 +164,22 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 */
         String uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storagePoolName;
 
-        parameters.setHost(managementIP+"_"+storagePoolName);
+        AppInstanceInfo.StorageInstance storageInfo = createApplicationInstance(managementIP,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName);
 
-        parameters.setPath(DateraUtil.getModifiedUrl(url));
+        if(null == storageInfo || null == storageInfo.access || storageInfo.access.iqn == null || storageInfo.access.iqn.isEmpty())
+        {
+            throw new CloudRuntimeException("IQN not generated on the primary storage.");
+        }
+
+        if(storageInfo.access.ips == null || 0 == storageInfo.access.ips.size())
+        {
+            throw new CloudRuntimeException("Storage IP not generated for the primary storage.");
+        }
+        parameters.setHost(storageInfo.access.ips.get(0));
+        //parameters.setHost(managementIP+"_"+storagePoolName);
+
+        parameters.setPath(storageInfo.access.iqn);
+        //parameters.setPath(DateraUtil.getModifiedUrl(url));
         parameters.setUuid(uuid);
 
 
@@ -181,13 +196,17 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         if(rest.isAppInstanceExists(appInstanceName))
              throw new CloudRuntimeException("App name already exists : "+appInstanceName);
 
-        //rest.createAppInstance(appInstanceName);
-        //rest.createStorageInstance(appInstanceName, rest.defaultStorageName);
+        rest.createAppInstance(appInstanceName);
+        rest.createStorageInstance(appInstanceName, rest.defaultStorageName,networkPoolName);
+        String volumeName = rest.createNextVolume(appInstanceName, rest.defaultStorageName,1);
+        rest.setAdminState(appInstanceName, false);
+        rest.deleteVolume(appInstanceName, rest.defaultStorageName, volumeName);
+        rest.setAdminState(appInstanceName, true);
+
+/*
         //rest.createVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName, 2);
         rest.createVolume(appInstanceName, null, null, 2, 3, "allow_all", "/access_network_ip_pools/"+networkPoolName);
-        rest.setAdminState(appInstanceName, false);
-        rest.deleteVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName);
-        rest.setAdminState(appInstanceName, true);
+*/
         return rest.getStorageInfo(appInstanceName, rest.defaultStorageName);
      }
 

@@ -149,7 +149,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         rest.registerInitiator(DateraUtil.generateInitiatorLabel(host.getUuid()), host.getStorageUrl());
 
-        rest.updateStorageWithInitiator(DateraUtil.generateAppInstanceName(dtMetaData.storagePoolName, volumeInfo.getUuid()), rest.defaultStorageName, initiators);
+        rest.updateStorageWithInitiator(dtMetaData.appInstanceName, rest.defaultStorageName, initiators);
         s_logger.info("End connectVolumeToHost ");
         return true;
     }
@@ -290,8 +290,15 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
 
             DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
-
-
+            int dtVolSize =  DateraUtil.getVolumeSizeInGB(volumeInfo.getSize());
+            String dtVolumeName = rest.createNextVolume(dtMetaData.appInstanceName, rest.defaultStorageName, dtVolSize);
+            if(null == dtVolumeName || dtVolumeName.isEmpty())
+            {
+                throw new CloudRuntimeException("Datera : Could not create a volume");
+            }
+            int lunId = rest.getIntPart(dtVolumeName);
+            AppInstanceInfo.VolumeInfo dtVolumeInfo =  rest.getVolumeInfo(dtMetaData.appInstanceName, rest.defaultStorageName, dtVolumeName);
+/*
             String dtAppInstanceName = DateraUtil.generateAppInstanceName(dtMetaData.storagePoolName,volumeInfo.getUuid());
 
 
@@ -311,13 +318,15 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             {
                 throw new CloudRuntimeException("Storage IP not generated for the storage.");
             }
+*/
+            StoragePoolVO storagePool = _storagePoolDao.findById(dataStore.getId());
 
-            iqn = storageInfo.access.iqn;
-            s_logger.info(dtAppInstanceName+ " Storage IP and iqn  createAsync " +iqn + ", "+storageInfo.access.ips.get(0));
+            iqn = storagePool.getPath();
+            s_logger.info(dtMetaData.appInstanceName+ " Storage IP and iqn  createAsync " +iqn + ", "+storagePool.getHostAddress());
 
             VolumeVO csVolume = _volumeDao.findById(volumeInfo.getId());
 
-            csVolume.set_iScsiName("/"+iqn+"/0");
+            csVolume.set_iScsiName("/"+iqn+"/"+lunId);
             //csVolume.setFolder(storageInfo.volumes.volume1.uuid);
             csVolume.setFolder("199");
             csVolume.setPoolType(StoragePoolType.IscsiLUN);
@@ -326,17 +335,14 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             _volumeDao.update(csVolume.getId(), csVolume);
 
 
-            updateVolumeDetails(csVolume.getId(), DateraUtil.getVolumeSizeInBytes(storageInfo.volumes.volume1.size));
+            updateVolumeDetails(csVolume.getId(), DateraUtil.getVolumeSizeInBytes(dtVolumeInfo.size));
 
-            StoragePoolVO storagePool = _storagePoolDao.findById(dataStore.getId());
 
 //            long capacityBytes = storagePool.getCapacityBytes();
             // getUsedBytes(StoragePool) will include the bytes of the newly created volume because
             // updateVolumeDetails(long, long) has already been called for this volume
 //            long usedBytes = getUsedBytes(storagePool);
 
-            storagePool.setHostAddress(storageInfo.access.ips.get(0));
-            storagePool.setPath("/"+iqn+"/0");
 //            storagePool.setUsedBytes(usedBytes > capacityBytes ? capacityBytes : usedBytes);
 
             _storagePoolDao.update(storagePoolId, storagePool);
