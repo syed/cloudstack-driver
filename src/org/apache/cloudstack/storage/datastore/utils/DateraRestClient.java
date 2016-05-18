@@ -1,12 +1,17 @@
 package org.apache.cloudstack.storage.datastore.utils;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Type;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -36,6 +41,7 @@ import com.cloud.utils.exception.CloudRuntimeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
 
 public class DateraRestClient {
     private static final Logger s_logger = Logger.getLogger(DateraPrimaryDataStoreDriver.class);
@@ -150,8 +156,9 @@ public class DateraRestClient {
   public int replicaCount;
   //snapshot policies
 
-  public VolumeModel(int volSize, int volReplicaSize)
+  public VolumeModel(String volName,int volSize, int volReplicaSize)
   {
+   name =  volName;
    size = volSize;
    replicaCount = volReplicaSize;
   }
@@ -223,6 +230,20 @@ public class DateraRestClient {
      id = iqn;
    }
  }
+   public String createNextVolume(String appInstance, String storageInstance, int volSize)
+   {
+        List<AppInstanceInfo.VolumeInfo> volumes = getVolumes(appInstance, storageInstance);
+        String volumeName = generateNextVolumeName(volumes,"volume");
+        return createVolume(appInstance, storageInstance,volumeName,volSize) ? volumeName : "";
+   }
+   public List<AppInstanceInfo.VolumeInfo> getVolumes(String appInstance, String storageInstance) {
+       String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes", appInstance,storageInstance);
+       HttpGet getRequest = new HttpGet(restPath);
+       getRequest.setHeader("auth-token",respLogin.getKey());
+	   String response = execute(getRequest);
+	   return getVolumeList(response);
+
+  }
  public boolean updateStorageWithInitiator(String appInstance, String storageInstance, List<String> initiators)
  {
       //setAdminState(appInstance, false);
@@ -282,13 +303,13 @@ public class DateraRestClient {
      HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances/"+storageInstance+"/volumes");
      postRequest.setHeader("Content-Type","application/json");
      postRequest.setHeader("auth-token",respLogin.getKey());
-     VolumeModel vol = new VolumeModel(volSize,3);
+     VolumeModel vol = new VolumeModel(volName,volSize,3);
      String payload = gson.toJson(vol);
      setPayload(postRequest,payload);
      String response = execute(postRequest);
      GenericResponse resp = gson.fromJson(response, GenericResponse.class);
 
-     return resp.name.equals(appName) ? true : false;
+     return resp.name.equals(volName) ? true : false;
  }
  public boolean createStorageInstance(String appName, String storageInstance)
  {
@@ -454,7 +475,7 @@ private void setPayload(HttpPost request, String payload) {
     new StorageInstanceModel(
       new StorageModel(networkPoolName,
         new VolumeInstanceModel(
-          new VolumeModel(volumeGB, volReplica)),new ACLPolicyModel(initiators,initiatorGroups))));
+          new VolumeModel(defaultVolumeName, volumeGB, volReplica)),new ACLPolicyModel(initiators,initiatorGroups))));
 
   payload = gson.toJson(app);
 
@@ -576,4 +597,59 @@ private void setPayload(HttpPost request, String payload) {
         return null;
     }
 
+    private List<AppInstanceInfo.VolumeInfo> getVolumeList(String volumesJson)
+    {
+        List<AppInstanceInfo.VolumeInfo> volumes = new ArrayList<AppInstanceInfo.VolumeInfo>();
+        try
+        {
+	        GsonBuilder gsonBuilder = new GsonBuilder();
+	        Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
+	        gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
+	        Gson gson1 = gsonBuilder.create();
+
+	        Map<String, Object> map = gson1.fromJson(volumesJson, mapStringObjectType);
+	        for (Map.Entry<String, Object> entry : map.entrySet()) {
+	            String volJson = entry.getValue().toString();
+	            AppInstanceInfo.VolumeInfo vol = gson1.fromJson(volJson, AppInstanceInfo.VolumeInfo.class);
+	            volumes.add(vol);
+	       }
+        }
+        catch(Exception ex)
+        {
+            throw new RuntimeException("Datera : unable to deserialize volume list. "+ex);
+        }
+       return volumes;
+    }
+    public String generateNextVolumeName(List<AppInstanceInfo.VolumeInfo> volumes, String filter)
+    {
+       List<String> names = new ArrayList<String>();
+       for(AppInstanceInfo.VolumeInfo vol : volumes)
+       {
+           names.add(vol.name);
+       }
+       return generateName(names,filter);
+    }
+    public String generateName(List<String> nameList, String filter) {
+        int maxInt = 0;
+        if (nameList != null && !nameList.isEmpty()) {
+            List<Integer> list=new ArrayList<>();
+            /*maxInt = nameList.parallelStream().mapToInt(name -> getIntPart(name)).max().getAsInt() + 1;*/
+            for (String name : nameList) {
+                list.add(getIntPart(name));
+            }
+            Collections.sort(list);
+            maxInt=list.get(list.size()-1)+1;
+        }
+        return filter + "-" + maxInt;
+    }
+
+    public int getIntPart(String name) {
+        try {
+            if (name.split("-").length > 1)
+                return Integer.parseInt(name.split("-")[1]);
+            return 0;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 }
