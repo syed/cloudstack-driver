@@ -54,7 +54,10 @@ public class DateraRestClient {
  private String password;
  public final String defaultStorageName = "storage-1";
  public final String defaultVolumeName = "volume-1";
- public static final String CONFLICT_ERROR = "ConflictError";
+ private static final String CONFLICT_ERROR = "ConflictError";
+ private static final String AUTH_FAILED_ERROR = "AuthFailedError";
+ private static final String DATERA_LOG_PREFIX = "Datera : ";
+
  public DateraRestClient(String ip, int port,String user, String pass)
  {
   managementIp = ip;
@@ -529,10 +532,17 @@ private void setPayload(HttpPost request, String payload) {
 
   String resp = execute(postRequest);
   s_logger.info("DateraRestClient.doLogin response ="+resp);
-  if(null != resp)
+  if(null == resp || resp.isEmpty())
   {
-   respLogin = gson.fromJson(resp, LoginResponse.class);
+     throw new RuntimeException(DATERA_LOG_PREFIX+"No response from the datera node");
   }
+  DateraError error = gson.fromJson(resp, DateraError.class);
+  if(null != error.name && error.name.equals(AUTH_FAILED_ERROR))
+  {
+    throw new RuntimeException(DATERA_LOG_PREFIX+"Authentication failure, "+error.message);
+  }
+
+   respLogin = gson.fromJson(resp, LoginResponse.class);
 
   if(null == respLogin || null == respLogin.getKey())
   {
