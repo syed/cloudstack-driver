@@ -54,7 +54,7 @@ public class DateraRestClient {
  private String password;
  public final String defaultStorageName = "storage-1";
  public final String defaultVolumeName = "volume-1";
-
+ public static final String CONFLICT_ERROR = "ConflictError";
  public DateraRestClient(String ip, int port,String user, String pass)
  {
   managementIp = ip;
@@ -233,6 +233,18 @@ public class DateraRestClient {
      id = iqn;
    }
  }
+ public class DateraError
+ {
+    public String name;
+    public int code;
+    public int http;
+    public String message;
+    @SerializedName("api_req_id")
+    public int apiReqId;
+    @SerializedName("storage_node_uuid")
+    public String storageNodeUuid;
+    public String ts;
+ }
    public AppInstanceInfo.VolumeInfo getVolumeInfo(String appInstance, String storageInstance, String volumeName)
    {
        String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s", appInstance,storageInstance,volumeName);
@@ -296,7 +308,11 @@ public class DateraRestClient {
     String response = execute(postRequest);
     s_logger.info("DateraRestClient.registerInitiator response ="+response);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
-
+    if(resp.name.equals(CONFLICT_ERROR))
+    {
+        DateraError error = gson.fromJson(response, DateraError.class);
+        throw new RuntimeException("Datera : register initiator, "+error.message);
+    }
     return resp.name.equals(labelName) ? true : false;
  }
    public boolean isAppInstanceExists(String appName)
