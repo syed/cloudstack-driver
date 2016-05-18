@@ -214,10 +214,13 @@ public class DateraRestClient {
  public class StorageModelEx
  {
      public String name;
+     @SerializedName("ip_pool")
+     public String ipPool;
 
-     public StorageModelEx(String storageName)
+     public StorageModelEx(String storageName, String ipPool)
      {
        name = storageName;
+       this.ipPool = ipPool;
      }
  }
  public class InitiatorModel
@@ -311,12 +314,13 @@ public class DateraRestClient {
 
      return resp.name.equals(volName) ? true : false;
  }
- public boolean createStorageInstance(String appName, String storageInstance)
+ public boolean createStorageInstance(String appName, String storageInstance, String networkPoolName)
  {
     HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances");
     postRequest.setHeader("Content-Type","application/json");
     postRequest.setHeader("auth-token",respLogin.getKey());
-    StorageModelEx storage = new StorageModelEx(storageInstance);
+    networkPoolName = "/access_network_ip_pools/"+networkPoolName;
+    StorageModelEx storage = new StorageModelEx(storageInstance,networkPoolName);
     String payload = gson.toJson(storage);
     setPayload(postRequest,payload);
     String response = execute(postRequest);
