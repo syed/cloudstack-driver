@@ -233,6 +233,15 @@ public class DateraRestClient {
      id = iqn;
    }
  }
+   public AppInstanceInfo.VolumeInfo getVolumeInfo(String appInstance, String storageInstance, String volumeName)
+   {
+       String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s", appInstance,storageInstance,volumeName);
+       HttpGet getRequest = new HttpGet(restPath);
+       getRequest.setHeader("auth-token",respLogin.getKey());
+       String response = execute(getRequest);
+       AppInstanceInfo.VolumeInfo resp = gson.fromJson(response, AppInstanceInfo.VolumeInfo.class);
+       return resp;
+   }
    public String createNextVolume(String appInstance, String storageInstance, int volSize)
    {
         List<AppInstanceInfo.VolumeInfo> volumes = getVolumes(appInstance, storageInstance);
