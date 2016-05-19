@@ -443,4 +443,8 @@ public class DateraUtil {
     {
         return "/initiators/"+hostIqn;
     }
+
+    public static String constructVolumeName(String lunId) {
+        return "volume-"+lunId;
+    }
 }

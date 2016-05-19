@@ -328,7 +328,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             csVolume.set_iScsiName("/"+iqn+"/"+lunId);
             //csVolume.setFolder(storageInfo.volumes.volume1.uuid);
-            csVolume.setFolder("199");
+            csVolume.setFolder(String.valueOf(lunId));
             csVolume.setPoolType(StoragePoolType.IscsiLUN);
             csVolume.setPoolId(storagePoolId);
 
@@ -376,7 +376,6 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     @Override
     public void deleteAsync(DataStore dataStore, DataObject dataObject, AsyncCompletionCallback<CommandResult> callback) {
         String errMsg = null;
-
         if (dataObject.getType() == DataObjectType.VOLUME) {
             try {
                 VolumeInfo volumeInfo = (VolumeInfo)dataObject;
@@ -386,19 +385,24 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
                 DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
 
-                String dtAppInstanceName = DateraUtil.generateAppInstanceName(dtMetaData.storagePoolName,volumeInfo.getUuid());
+                //String dtAppInstanceName = DateraUtil.generateAppInstanceName(dtMetaData.storagePoolName,volumeInfo.getUuid());
 
                 DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
-                rest.deleteAppInstance(dtAppInstanceName);
+                rest.setAdminState(dtMetaData.appInstanceName, false);
+                String volumeName = DateraUtil.constructVolumeName(volumeInfo.getFolder());
+
+                rest.deleteVolume(dtMetaData.appInstanceName, rest.defaultStorageName, volumeName);
+                rest.setAdminState(dtMetaData.appInstanceName, true);
+
 
                 _volumeDetailsDao.removeDetails(volumeId);
 
                 StoragePoolVO storagePool = _storagePoolDao.findById(storagePoolId);
 
                 // getUsedBytes(StoragePool) will not include the volume to delete because it has already been deleted by this point
-                long usedBytes = getUsedBytes(storagePool);
+                //long usedBytes = getUsedBytes(storagePool);
 
-                storagePool.setUsedBytes(usedBytes < 0 ? 0 : usedBytes);
+                //storagePool.setUsedBytes(usedBytes < 0 ? 0 : usedBytes);
 
                 _storagePoolDao.update(storagePoolId, storagePool);
             }

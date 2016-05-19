@@ -314,7 +314,7 @@ public class DateraRestClient {
     if(resp.name.equals(CONFLICT_ERROR))
     {
         DateraError error = gson.fromJson(response, DateraError.class);
-        throw new RuntimeException("Datera : register initiator, "+error.message);
+        //throw new RuntimeException("Datera : register initiator, "+error.message);
     }
     return resp.name.equals(labelName) ? true : false;
  }
@@ -428,7 +428,6 @@ private void setPayload(HttpPut request, String payload) {
   HttpDelete deleteRequest = new HttpDelete(restPath);
   deleteRequest.setHeader("auth-token",respLogin.getKey());
   String response = execute(deleteRequest);
-
   GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
   return respObj.name.equals(volumeInstance) ? true : false;
 
