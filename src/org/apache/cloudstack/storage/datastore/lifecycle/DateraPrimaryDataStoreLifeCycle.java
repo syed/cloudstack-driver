@@ -300,27 +300,17 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
     public boolean deleteDataStore(DataStore store) {
 
         long storagePoolId = store.getId();
-/*
-        StoragePoolDetailVO storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_IP);
-        String managementIP = storagePoolDetail.getValue();
 
-        storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_PORT);
-        int managementPort = Integer.parseInt(storagePoolDetail.getValue());
+        boolean ret = dataStoreHelper.deletePrimaryDataStore(store);
+        if(ret)
+        {
+            DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
 
-        storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_USERNAME);
-        String managementUserName = storagePoolDetail.getValue();
-
-        storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_PASSWORD);
-        String managementPassword = storagePoolDetail.getValue();
-
-        storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.APP_NAME);
-        String appInstanceName = storagePoolDetail.getValue();
-
-        DateraRestClient rest = new DateraRestClient(managementIP,managementPort,managementUserName,managementPassword);
-        rest.setAdminState(appInstanceName, false);
-        rest.deleteAppInstance(appInstanceName);
-*/
-        return dataStoreHelper.deletePrimaryDataStore(store);
+            DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP,dtMetaData.managementPort,dtMetaData.managementUserName,dtMetaData.managementPassword);
+            rest.setAdminState(dtMetaData.appInstanceName, false);
+            rest.deleteAppInstance(dtMetaData.appInstanceName);
+        }
+        return ret;
     }
 
     /* (non-Javadoc)

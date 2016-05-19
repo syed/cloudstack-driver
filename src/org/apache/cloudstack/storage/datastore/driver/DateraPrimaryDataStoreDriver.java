@@ -338,12 +338,12 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             updateVolumeDetails(csVolume.getId(), DateraUtil.getVolumeSizeInBytes(dtVolumeInfo.size));
 
 
-//            long capacityBytes = storagePool.getCapacityBytes();
+            long capacityBytes = storagePool.getCapacityBytes();
             // getUsedBytes(StoragePool) will include the bytes of the newly created volume because
             // updateVolumeDetails(long, long) has already been called for this volume
-//            long usedBytes = getUsedBytes(storagePool);
+            long usedBytes = getUsedBytes(storagePool);
 
-//            storagePool.setUsedBytes(usedBytes > capacityBytes ? capacityBytes : usedBytes);
+            storagePool.setUsedBytes(usedBytes > capacityBytes ? capacityBytes : usedBytes);
 
             _storagePoolDao.update(storagePoolId, storagePool);
 
@@ -400,9 +400,9 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 StoragePoolVO storagePool = _storagePoolDao.findById(storagePoolId);
 
                 // getUsedBytes(StoragePool) will not include the volume to delete because it has already been deleted by this point
-                //long usedBytes = getUsedBytes(storagePool);
+                long usedBytes = getUsedBytes(storagePool);
 
-                //storagePool.setUsedBytes(usedBytes < 0 ? 0 : usedBytes);
+                storagePool.setUsedBytes(usedBytes < 0 ? 0 : usedBytes);
 
                 _storagePoolDao.update(storagePoolId, storagePool);
             }
