@@ -52,17 +52,20 @@ public class DateraUtil {
         }
     }
     public static final String PROVIDER_NAME = "Datera";
-
+    public static final String SHARED_PROVIDER_NAME = "DateraShared";
+    
     public static final String LOG_PREFIX = "Datera: ";
 
     public static final String STORAGE_POOL_NAME = "storagePoolName";
+
+    public static final String DATACENTER = "datacenter";
 
     public static final String MANAGEMENT_IP = "mgmtIP";
 
     public static final String MANAGEMENT_PORT = "mgmtPort";
 
     public static final String STORAGE_VIP = "storageVIP";
-    public static final String STORAGE_VPort = "storageVPort";
+    public static final String STORAGE_Port = "storagePort";
 
     public static final String MANAGEMENT_USERNAME = "mgmtUserName";
     public static final String MANAGEMENT_PASSWORD = "mgmtPassword";
@@ -86,6 +89,9 @@ public class DateraUtil {
     private static final int DEFAULT_STORAGE_PORT = 3260;
 
     public static final String VOLUME_SIZE_NAME = "dateraVolumeSize";
+
+    public static final String DATASTORE_NAME = "datastoreName";
+    public static final String IQN = "iqn";
 
 
     private static String getVip(String keyToMatch, String url) {
