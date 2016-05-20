@@ -1,6 +1,5 @@
 package org.apache.cloudstack.storage.datastore.lifecycle;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,7 +8,6 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import org.apache.log4j.Logger;
-import org.apache.cloudstack.context.CallContext;
 import org.apache.cloudstack.engine.subsystem.api.storage.ClusterScope;
 import org.apache.cloudstack.engine.subsystem.api.storage.DataStore;
 import org.apache.cloudstack.engine.subsystem.api.storage.HostScope;
@@ -32,7 +30,6 @@ import com.cloud.agent.api.CreateStoragePoolCommand;
 import com.cloud.agent.api.DeleteStoragePoolCommand;
 import com.cloud.agent.api.StoragePoolInfo;
 import com.cloud.dc.ClusterDetailsDao;
-import com.cloud.dc.ClusterDetailsVO;
 import com.cloud.dc.ClusterVO;
 import com.cloud.dc.dao.ClusterDao;
 import com.cloud.dc.dao.DataCenterDao;
@@ -49,9 +46,7 @@ import com.cloud.storage.StoragePoolHostVO;
 import com.cloud.storage.VMTemplateStoragePoolVO;
 import com.cloud.storage.dao.StoragePoolHostDao;
 import com.cloud.template.TemplateManager;
-import com.cloud.user.Account;
 import com.cloud.user.AccountDetailsDao;
-import com.cloud.user.AccountVO;
 import com.cloud.user.dao.AccountDao;
 import com.cloud.utils.exception.CloudRuntimeException;
 
@@ -161,7 +156,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
 
         AppInstanceInfo.StorageInstance dtStorageInfo = createApplicationInstance(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName,capacityBytes,clusterId);
-        
+
         String iqn = dtStorageInfo.access.iqn;
 
         parameters.setUuid(iqn);
@@ -511,7 +506,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         Long capacityBytes = strCapacityBytes != null ? Long.parseLong(strCapacityBytes) : null;
         Long capacityIops = strCapacityIops != null ? Long.parseLong(strCapacityIops) : null;
 
-        
+
         long size = capacityBytes != null ? capacityBytes : storagePool.getCapacityBytes();
 
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
@@ -519,13 +514,4 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         //update the volume capacity, resize the volume
     }
 
-    @Override
-    public void enableStoragePool(DataStore dataStore) {
-        _primaryDataStoreHelper.enable(dataStore);
-    }
-
-    @Override
-    public void disableStoragePool(DataStore dataStore) {
-        _primaryDataStoreHelper.disable(dataStore);
-    }
 }

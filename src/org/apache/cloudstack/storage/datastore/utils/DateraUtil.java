@@ -53,7 +53,7 @@ public class DateraUtil {
     }
     public static final String PROVIDER_NAME = "Datera";
     public static final String SHARED_PROVIDER_NAME = "DateraShared";
-    
+
     public static final String LOG_PREFIX = "Datera: ";
 
     public static final String STORAGE_POOL_NAME = "storagePoolName";
