@@ -94,9 +94,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             throw new CloudRuntimeException("The Cluster ID must be specified.");
         }
 
-        String storageVip = DateraUtil.getStorageVip(url);
-        int storagePort = DateraUtil.getStoragePort(url);
-
         if (capacityBytes == null || capacityBytes <= 0) {
             throw new IllegalArgumentException("'capacityBytes' must be present and greater than 0.");
         }
@@ -156,8 +153,19 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
 
         AppInstanceInfo.StorageInstance dtStorageInfo = createApplicationInstance(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName,capacityBytes,clusterId);
+        if(null == dtStorageInfo || null == dtStorageInfo.access || dtStorageInfo.access.iqn == null || dtStorageInfo.access.iqn.isEmpty())
+        {
+            throw new CloudRuntimeException("IQN not generated on the primary storage.");
+        }
+
+        if(dtStorageInfo.access.ips == null || 0 == dtStorageInfo.access.ips.size())
+        {
+            throw new CloudRuntimeException("Storage IP not generated for the primary storage.");
+        }
 
         String iqn = dtStorageInfo.access.iqn;
+        String storageVip = dtStorageInfo.access.ips.get(0);
+        int storagePort = 3260;
 
         parameters.setUuid(iqn);
 
