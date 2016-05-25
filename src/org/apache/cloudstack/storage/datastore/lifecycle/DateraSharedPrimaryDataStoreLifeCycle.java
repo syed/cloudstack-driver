@@ -155,21 +155,33 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         long lMaxIops = 15000;
         long lBurstIops = 15000;
 
-/*
-        AppInstanceInfo.StorageInstance dtStorageInfo = createApplicationInstance(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName,capacityBytes,clusterId);
-        if(null == dtStorageInfo || null == dtStorageInfo.access || dtStorageInfo.access.iqn == null || dtStorageInfo.access.iqn.isEmpty())
-        {
-            throw new CloudRuntimeException("IQN not generated on the primary storage.");
-        }
-
-        if(dtStorageInfo.access.ips == null || 0 == dtStorageInfo.access.ips.size())
-        {
-            throw new CloudRuntimeException("Storage IP not generated for the primary storage.");
-        }
-*/
-        String iqn = "iqn:dummy";
-        String storageVip = clvmVolumeGroupName;
+        String iqn = "";
+        String storageVip = "";
         int storagePort = 3260;
+        String storagePath = "";
+
+        if(isDateraAccessAuthorised(hypervisorType))
+        {
+            AppInstanceInfo.StorageInstance dtStorageInfo = createApplicationInstance(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName,capacityBytes,clusterId);
+            if(null == dtStorageInfo || null == dtStorageInfo.access || dtStorageInfo.access.iqn == null || dtStorageInfo.access.iqn.isEmpty())
+            {
+                throw new CloudRuntimeException("IQN not generated on the primary storage.");
+            }
+
+            if(dtStorageInfo.access.ips == null || 0 == dtStorageInfo.access.ips.size())
+            {
+                throw new CloudRuntimeException("Storage IP not generated for the primary storage.");
+            }
+
+            iqn = dtStorageInfo.access.iqn;
+            storageVip = dtStorageInfo.access.ips.get(0);
+        }
+        else
+        {
+            iqn="iqn";
+            storageVip = clvmVolumeGroupName;
+            storagePath = clvmVolumeGroupName;
+        }
 
         parameters.setUuid(UUID.randomUUID().toString());
 
@@ -188,7 +200,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
         else if (HypervisorType.KVM.equals(hypervisorType))
         {
-            parameters.setPath(clvmVolumeGroupName);
+            parameters.setPath(storagePath);
             parameters.setHost(storageVip);
             parameters.setPort(storagePort);
         }
@@ -477,11 +489,18 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             //unregister the initiators or remove the initiator group
         }
 
-        deleteDateraApplicationInstance(storagePool.getId());
+        if(isDateraAccessAuthorised(hypervisorType))
+            deleteDateraApplicationInstance(storagePool.getId());
 
         return _primaryDataStoreHelper.deletePrimaryDataStore(dataStore);
     }
 
+    private boolean isDateraAccessAuthorised(HypervisorType hypervisorType)
+    {
+       if(HypervisorType.VMware.equals(hypervisorType) || HypervisorType.XenServer.equals(hypervisorType))
+          return true;
+       return false;
+    }
     private boolean deleteDateraApplicationInstance(long storagePoolId) {
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
