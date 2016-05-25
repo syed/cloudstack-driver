@@ -59,13 +59,14 @@ public class DateraUtil {
     public static final String STORAGE_POOL_NAME = "storagePoolName";
 
     public static final String DATACENTER = "datacenter";
+    public static final String CLVM_VOLUME_GROUP_NAME = "volumeGroupName";
 
     public static final String MANAGEMENT_IP = "mgmtIP";
 
     public static final String MANAGEMENT_PORT = "mgmtPort";
 
     public static final String STORAGE_VIP = "storageVIP";
-    public static final String STORAGE_Port = "storagePort";
+    public static final String STORAGE_PORT = "storagePort";
 
     public static final String MANAGEMENT_USERNAME = "mgmtUserName";
     public static final String MANAGEMENT_PASSWORD = "mgmtPassword";

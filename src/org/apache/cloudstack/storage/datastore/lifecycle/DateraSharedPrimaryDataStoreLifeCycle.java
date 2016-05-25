@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.inject.Inject;
 
@@ -108,12 +109,14 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             throw new CloudRuntimeException(hypervisorType + " is not a supported hypervisor type.");
         }
 
+        String datacenter = "dummy1";
+/*
         String datacenter = DateraUtil.getValue(DateraUtil.DATACENTER, url, false);
 
         if (HypervisorType.VMware.equals(hypervisorType) && datacenter == null) {
             throw new CloudRuntimeException("'Datacenter' must be set for hypervisor type of " + HypervisorType.VMware);
         }
-
+*/
         PrimaryDataStoreParameters parameters = new PrimaryDataStoreParameters();
 
         parameters.setType(getStorageType(hypervisorType));
@@ -135,23 +138,24 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         String managementVip = DateraUtil.getManagementIP(url);
         int managementPort = DateraUtil.getManagementPort(url);
 
-        details.put(DateraUtil.MANAGEMENT_IP, managementVip);
-        details.put(DateraUtil.MANAGEMENT_PORT, String.valueOf(managementPort));
-
         String managementUsername = DateraUtil.getValue(DateraUtil.MANAGEMENT_USERNAME, url);
         String managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
         String networkPoolName = DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url);
+        String clvmVolumeGroupName = DateraUtil.getValue(DateraUtil.CLVM_VOLUME_GROUP_NAME, url);
 
+        details.put(DateraUtil.MANAGEMENT_IP, managementVip);
+        details.put(DateraUtil.MANAGEMENT_PORT, String.valueOf(managementPort));
         details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
         details.put(DateraUtil.MANAGEMENT_PASSWORD, managementPassword);
         details.put(DateraUtil.APP_NAME, appInstanceName);
         details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
+        details.put(DateraUtil.CLVM_VOLUME_GROUP_NAME,clvmVolumeGroupName);
 
         long lMinIops = 100;
         long lMaxIops = 15000;
         long lBurstIops = 15000;
 
-
+/*
         AppInstanceInfo.StorageInstance dtStorageInfo = createApplicationInstance(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName,capacityBytes,clusterId);
         if(null == dtStorageInfo || null == dtStorageInfo.access || dtStorageInfo.access.iqn == null || dtStorageInfo.access.iqn.isEmpty())
         {
@@ -162,12 +166,12 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         {
             throw new CloudRuntimeException("Storage IP not generated for the primary storage.");
         }
-
-        String iqn = dtStorageInfo.access.iqn;
-        String storageVip = dtStorageInfo.access.ips.get(0);
+*/
+        String iqn = "iqn:dummy";
+        String storageVip = clvmVolumeGroupName;
         int storagePort = 3260;
 
-        parameters.setUuid(iqn);
+        parameters.setUuid(UUID.randomUUID().toString());
 
         if (HypervisorType.VMware.equals(hypervisorType)) {
             String datastore = iqn.replace("/", "_");
@@ -180,7 +184,13 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             details.put(DateraUtil.DATASTORE_NAME, datastore);
             details.put(DateraUtil.IQN, iqn);
             details.put(DateraUtil.STORAGE_VIP, storageVip);
-            details.put(DateraUtil.STORAGE_Port, "3260");
+            details.put(DateraUtil.STORAGE_PORT, String.valueOf(storagePort));
+        }
+        else if (HypervisorType.KVM.equals(hypervisorType))
+        {
+            parameters.setPath(clvmVolumeGroupName);
+            parameters.setHost(storageVip);
+            parameters.setPort(storagePort);
         }
         else {
             parameters.setHost(storageVip);
@@ -210,7 +220,10 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         if (HypervisorType.XenServer.equals(hypervisorType)) {
             return StoragePoolType.IscsiLUN;
         }
-
+        if(HypervisorType.KVM.equals(hypervisorType))
+        {
+            return StoragePoolType.CLVM;
+        }
         if (HypervisorType.VMware.equals(hypervisorType)) {
             return StoragePoolType.VMFS;
         }
@@ -340,7 +353,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
             details.put(CreateStoragePoolCommand.STORAGE_HOST, storagePoolDetail.getValue());
 
-            storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePool.getId(), DateraUtil.STORAGE_Port);
+            storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePool.getId(), DateraUtil.STORAGE_PORT);
 
             details.put(CreateStoragePoolCommand.STORAGE_PORT, storagePoolDetail.getValue());
 
@@ -434,7 +447,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
                 details.put(DeleteStoragePoolCommand.STORAGE_HOST, storagePoolDetail.getValue());
 
-                storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePool.getId(), DateraUtil.STORAGE_Port);
+                storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePool.getId(), DateraUtil.STORAGE_PORT);
 
                 details.put(DeleteStoragePoolCommand.STORAGE_PORT, storagePoolDetail.getValue());
 
@@ -485,7 +498,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
     }
 
     private static boolean isSupportedHypervisorType(HypervisorType hypervisorType) {
-        return HypervisorType.XenServer.equals(hypervisorType) || HypervisorType.VMware.equals(hypervisorType);
+        return HypervisorType.XenServer.equals(hypervisorType) || HypervisorType.VMware.equals(hypervisorType) || HypervisorType.KVM.equals(hypervisorType);
     }
 
     private HypervisorType getHypervisorType(long hostId) {
