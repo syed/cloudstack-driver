@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -57,6 +58,7 @@ public class DateraRestClient {
  private static final String CONFLICT_ERROR = "ConflictError";
  private static final String AUTH_FAILED_ERROR = "AuthFailedError";
  private static final String DATERA_LOG_PREFIX = "Datera : ";
+ private static final String VALIDATION_FAILED_ERROR = "ValidationFailedError";
 
  public DateraRestClient(String ip, int port,String user, String pass)
  {
@@ -65,19 +67,6 @@ public class DateraRestClient {
   userName = user;
   password = pass;
   doLogin();
- }
-
-
- private class InitiatorGroup
- {
-  public String name;
-  public List<String> members = null;
-
-  public InitiatorGroup(String paramName, List<String> paramMembers)
-  {
-   this.name = paramName;
-   this.members = paramMembers;
-  }
  }
 
  private class LoginModel
@@ -248,6 +237,30 @@ public class DateraRestClient {
     public String storageNodeUuid;
     public String ts;
  }
+ public List<String> enumerateAppInstances()
+ {
+     List<String> apps = new ArrayList<String>();
+     HttpGet getRequest = new HttpGet("/v2/app_instances");
+     getRequest.setHeader("auth-token",respLogin.getKey());
+     String response = execute(getRequest);
+     
+     extractAppNames(apps, response);
+
+     return apps;
+ }
+private void extractAppNames(List<String> apps, String response) {
+     GsonBuilder gsonBuilder = new GsonBuilder();
+     Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
+     gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
+     Gson gson1 = gsonBuilder.create();
+
+     Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
+     for (Map.Entry<String, Object> entry : map.entrySet()) {
+          String appJson = entry.getValue().toString();
+          AppInstanceInfo app = gson1.fromJson(appJson, AppInstanceInfo.class);
+          apps.add(app.name);
+      }
+}
    public AppInstanceInfo.VolumeInfo getVolumeInfo(String appInstance, String storageInstance, String volumeName)
    {
        String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s", appInstance,storageInstance,volumeName);
@@ -271,10 +284,37 @@ public class DateraRestClient {
        return getVolumeList(response);
 
   }
- public boolean updateStorageWithInitiator(String appInstance, String storageInstance, List<String> initiators)
+ private List<String> constructInitiatorList(List<String> initiators)
  {
-      //setAdminState(appInstance, false);
-      StorageInitiator storage = new StorageInitiator(initiators,null);
+     List<String> updatedList = new ArrayList<String>();
+     for(String iter : initiators)
+     {
+         if(false == iter.contains("/initiators/"))
+             updatedList.add("/initiators/"+iter);
+     }
+     return updatedList;
+ }
+ private List<String> constructInitiatorGroups(List<String> initiatorGroups)
+ {
+     List<String> updatedList = new ArrayList<String>();
+     for(String iter : initiatorGroups)
+     {
+         if(false == iter.contains("/initiator_groups/"))
+             updatedList.add("/initiator_groups/"+iter);
+     }
+     return updatedList;
+ }
+ public boolean updateStorageWithInitiator(String appInstance, String storageInstance, List<String> initiators, List<String> initiatorGroups)
+ {
+     if(null != initiators)
+     {
+      initiators = constructInitiatorList(initiators);
+     }
+     if(null != initiatorGroups)
+     {
+         initiatorGroups = constructInitiatorGroups(initiatorGroups);
+     }
+      StorageInitiator storage = new StorageInitiator(initiators,initiatorGroups);
 
       HttpPut putRequest = new HttpPut("/v2/app_instances/"+appInstance+"/storage_instances/"+storageInstance);
       putRequest.setHeader("Content-Type","application/json");
@@ -449,17 +489,30 @@ private void setPayload(HttpPut request, String payload) {
 
  }
 
- public void createInitiatorGroup(String name, List<String> initiators)
+ public boolean createInitiatorGroup(String groupName, List<String> initiators)
  {
+  if(null != initiators)
+  {
+   initiators = constructInitiatorList(initiators);
+  }
   HttpPost postRequest = new HttpPost("/v2/initiator_groups");
   postRequest.setHeader("Content-Type","application/json");
   postRequest.setHeader("auth-token",respLogin.getKey());
 
-  InitiatorGroup intrGroup = new InitiatorGroup(name,initiators);
+  DateraModel.InitiatorGroup intrGroup = new DateraModel.InitiatorGroup(groupName,initiators);
   String payload = gson.toJson(intrGroup);
 
   setPayload(postRequest, payload);
-  execute(postRequest);
+  String response = execute(postRequest);
+  
+  GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+  if(false == resp.name.equals(groupName))
+  {
+    DateraError err = gson.fromJson(response, DateraError.class);
+    //throw new RuntimeException(DATERA_LOG_PREFIX+"Error creating initiator group "+err.message);
+    return false;
+  }
+  return true;
  }
 private void setPayload(HttpPost request, String payload) {
    try {
@@ -470,12 +523,41 @@ private void setPayload(HttpPost request, String payload) {
        e.printStackTrace();
        }
 }
-
- public void getInitiators()
+ public List<String> registerInitiators(List<String> initiators)
  {
+     List<String> registered = new ArrayList<String>();
+     List<String> existing = getInitiators();
+     for(String iter : initiators)
+     {
+         if(false == existing.contains(iter))
+         {
+             if(registerInitiator("lbl_"+UUID.randomUUID(), iter))
+             {
+                 registered.add(iter);
+             }
+         }
+     }
+     return registered;
+ }
+ public List<String> getInitiators()
+ {
+       List<String> initiators = new ArrayList<String>();
        HttpGet getRequest = new HttpGet("/v2/initiators");
        getRequest.setHeader("auth-token",respLogin.getKey());
-       execute(getRequest);
+       String response = execute(getRequest);
+       
+       GsonBuilder gsonBuilder = new GsonBuilder();
+       Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
+       gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
+       Gson gson1 = gsonBuilder.create();
+
+       Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
+       for (Map.Entry<String, Object> entry : map.entrySet()) {
+           String volJson = entry.getValue().toString();
+           DateraModel.InitiatorModel initiator = gson1.fromJson(volJson, DateraModel.InitiatorModel.class);
+           initiators.add(initiator.id);
+       }
+       return initiators;
  }
  public AppInstanceInfo createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
  {
