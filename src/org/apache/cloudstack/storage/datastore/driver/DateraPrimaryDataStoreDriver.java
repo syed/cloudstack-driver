@@ -149,7 +149,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         rest.registerInitiator(DateraUtil.generateInitiatorLabel(host.getUuid()), host.getStorageUrl());
 
-        rest.updateStorageWithInitiator(dtMetaData.appInstanceName, rest.defaultStorageName, initiators);
+        rest.updateStorageWithInitiator(dtMetaData.appInstanceName, rest.defaultStorageName, initiators,null);
         s_logger.info("End connectVolumeToHost ");
         return true;
     }

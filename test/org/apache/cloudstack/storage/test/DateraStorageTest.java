@@ -16,6 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.cloudstack.storage.test;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -52,41 +54,45 @@ import com.cloud.utils.exception.CloudRuntimeException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DateraStorageTest {
-	
-	private DateraRestClient client;
-	private String MANAGEMENT_IP = "172.19.175.170";
-	private String USERNAME = "admin";
-	private String PASSWORD = "password";
-	private int PORT = 7718;
 
-	@Test
-	public void testCreateVolume(){
-		
+    private DateraRestClient client;
+    private String MANAGEMENT_IP = "172.19.175.170";
+    private String USERNAME = "admin";
+    private String PASSWORD = "password";
+    private int PORT = 7718;
+
+    @Test
+    public void testCreateVolume(){
+
         String appInstanceName = DateraUtil.generateAppInstanceName("test-pool-create", "cloudstack-vol-1");
         String storageInstanceName = "Storage-1";
-        
+
         DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
-        
+
         assertTrue(client.createAppInstance(appInstanceName));
-        assertTrue(client.createStorageInstance(appInstanceName, storageInstanceName));
+        assertTrue(client.createStorageInstance(appInstanceName, storageInstanceName,"default"));
         assertTrue(client.createVolume(appInstanceName, storageInstanceName, "volume-1", 2));
         assertTrue(client.setAdminState(appInstanceName, false));
         assertTrue(client.deleteAppInstance(appInstanceName));
-	}
-	@Test
-	public void testDeleteVolume(){
+    }
+    @Test
+    public void testDeleteVolume(){
 
         String appInstanceName = DateraUtil.generateAppInstanceName("test-pool-delete", "cloudstack-vol-2");
         String storageInstanceName = "Storage-1";
         String volumeName = "volume-1";
-        
+
         DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
-        
+
         assertTrue(client.createAppInstance(appInstanceName));
-        assertTrue(client.createStorageInstance(appInstanceName, storageInstanceName));
+        assertTrue(client.createStorageInstance(appInstanceName, storageInstanceName,"default"));
         assertTrue(client.createVolume(appInstanceName, storageInstanceName, volumeName, 2));
         assertTrue(client.setAdminState(appInstanceName, false));
         assertTrue(client.deleteVolume(appInstanceName, "Storage-1", volumeName));
         assertTrue(client.deleteAppInstance(appInstanceName));
-	}
+    }
+    @Test
+    public void testCredentials()
+    {
+    }
 }

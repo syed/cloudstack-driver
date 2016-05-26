@@ -6,8 +6,8 @@ import com.google.gson.annotations.SerializedName;
 
 public class DateraModel {
 
-    public static final String defaultStorage="storage-1"; 
-    public static final String defaultVolume="volume-1"; 
+    public static final String defaultStorage="storage-1";
+    public static final String defaultVolume="volume-1";
     private class LoginModel
      {
       public String name;
@@ -176,7 +176,7 @@ public class DateraModel {
         public String storageNodeUuid;
         public String ts;
      }
-    
+
     public static class InitiatorGroup
      {
       public String name;

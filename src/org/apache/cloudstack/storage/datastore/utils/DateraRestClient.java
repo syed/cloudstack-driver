@@ -243,7 +243,7 @@ public class DateraRestClient {
      HttpGet getRequest = new HttpGet("/v2/app_instances");
      getRequest.setHeader("auth-token",respLogin.getKey());
      String response = execute(getRequest);
-     
+
      extractAppNames(apps, response);
 
      return apps;
@@ -504,7 +504,7 @@ private void setPayload(HttpPut request, String payload) {
 
   setPayload(postRequest, payload);
   String response = execute(postRequest);
-  
+
   GenericResponse resp = gson.fromJson(response, GenericResponse.class);
   if(false == resp.name.equals(groupName))
   {
@@ -545,7 +545,7 @@ private void setPayload(HttpPost request, String payload) {
        HttpGet getRequest = new HttpGet("/v2/initiators");
        getRequest.setHeader("auth-token",respLogin.getKey());
        String response = execute(getRequest);
-       
+
        GsonBuilder gsonBuilder = new GsonBuilder();
        Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
        gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());

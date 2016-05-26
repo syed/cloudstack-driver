@@ -133,7 +133,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         parameters.setTags(tags);
         parameters.setDetails(details);
 
-        String appInstanceName = storagePoolName;
+        String appInstanceName = "";
+        String storageInstanceName = "";
 
         String managementVip = DateraUtil.getManagementIP(url);
         int managementPort = DateraUtil.getManagementPort(url);
@@ -142,12 +143,15 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         String managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
         String networkPoolName = DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url);
         String clvmVolumeGroupName = DateraUtil.getValue(DateraUtil.CLVM_VOLUME_GROUP_NAME, url);
+        appInstanceName = DateraUtil.getValue(DateraUtil.APP_NAME, url);
+        storageInstanceName = DateraUtil.getValue(DateraUtil.STORAGE_NAME, url);
 
         details.put(DateraUtil.MANAGEMENT_IP, managementVip);
         details.put(DateraUtil.MANAGEMENT_PORT, String.valueOf(managementPort));
         details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
         details.put(DateraUtil.MANAGEMENT_PASSWORD, managementPassword);
         details.put(DateraUtil.APP_NAME, appInstanceName);
+        details.put(DateraUtil.STORAGE_NAME, storageInstanceName);
         details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
         details.put(DateraUtil.CLVM_VOLUME_GROUP_NAME,clvmVolumeGroupName);
 
@@ -181,6 +185,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             iqn="iqn";
             storageVip = clvmVolumeGroupName;
             storagePath = clvmVolumeGroupName;
+            registerInitiatorsOnDatera(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,storageInstanceName,clusterId);
         }
 
         parameters.setUuid(UUID.randomUUID().toString());
@@ -218,6 +223,33 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         return dataStore;
     }
 
+    private void registerInitiatorsOnDatera(String managementIP,int managementPort,String managementUsername,String managementPassword,String appInstanceName,String storageInstanceName,Long clusterId)
+    {
+        List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
+        List<String> initiators = new ArrayList<String>();
+        for(HostVO host : hosts)
+        {
+            initiators.add(host.getStorageUrl());
+        }
+        if(0 == initiators.size())
+        {
+           throw new CloudRuntimeException("The hosts do not have initiators");
+        }
+
+        String groupName = appInstanceName;
+        DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
+        rest.registerInitiators(initiators);
+        if(false == rest.createInitiatorGroup(groupName, initiators))
+        {
+            throw new CloudRuntimeException("Could not create initiator group");
+        }
+        List<String> initiatorGroups = new ArrayList<String>();
+        initiatorGroups.add(groupName);
+        if(rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
+        {
+            throw new CloudRuntimeException("Could not update storage with initiator ,"+appInstanceName+", "+storageInstanceName);
+        }
+    }
     private HypervisorType getHypervisorTypeForCluster(long clusterId) {
         ClusterVO cluster = _clusterDao.findById(clusterId);
 

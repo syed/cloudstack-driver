@@ -72,6 +72,7 @@ public class DateraUtil {
     public static final String MANAGEMENT_PASSWORD = "mgmtPassword";
 
     public static final String APP_NAME = "appName";
+    public static final String STORAGE_NAME = "storageName";
 
     public static final String VOLUME_REPLICA = "replica";
 
