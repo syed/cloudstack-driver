@@ -236,13 +236,10 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
            throw new CloudRuntimeException("The hosts do not have initiators");
         }
 
-        String groupName = appInstanceName;
+        String groupName = "grp_"+appInstanceName;
         DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
         rest.registerInitiators(initiators);
-        if(false == rest.createInitiatorGroup(groupName, initiators))
-        {
-            throw new CloudRuntimeException("Could not create initiator group");
-        }
+        rest.createInitiatorGroup(groupName, initiators);
         List<String> initiatorGroups = new ArrayList<String>();
         initiatorGroups.add(groupName);
         if(false == rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
