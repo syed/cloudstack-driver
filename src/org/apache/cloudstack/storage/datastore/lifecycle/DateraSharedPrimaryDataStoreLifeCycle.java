@@ -245,7 +245,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
         List<String> initiatorGroups = new ArrayList<String>();
         initiatorGroups.add(groupName);
-        if(rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
+        if(false == rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
         {
             throw new CloudRuntimeException("Could not update storage with initiator ,"+appInstanceName+", "+storageInstanceName);
         }
