@@ -38,17 +38,19 @@ public class DateraUtil {
      public int replica;
      public String networkPoolName;
      public String appInstanceName;
+     public String storageInstanceName;
 
-        public DateraMetaData(String ip, int port, String user, String pass, String storage,int paramReplica, String nwPoolName, String appInstanceName)
+        public DateraMetaData(String ip, int port, String user, String pass, String storage,int paramReplica, String nwPoolName, String appInstanceName, String storageInstanceName)
         {
-            mangementIP = ip;
-            managementPort = port;
-            managementUserName = user;
-            managementPassword = pass;
-            storagePoolName = storage;
-            replica = paramReplica;
-            networkPoolName = nwPoolName;
+            this.mangementIP = ip;
+            this.managementPort = port;
+            this.managementUserName = user;
+            this.managementPassword = pass;
+            this.storagePoolName = storage;
+            this.replica = paramReplica;
+            this.networkPoolName = nwPoolName;
             this.appInstanceName = appInstanceName;
+            this.storageInstanceName = storageInstanceName;
         }
     }
     public static final String PROVIDER_NAME = "Datera";
@@ -405,30 +407,33 @@ public class DateraUtil {
     public static DateraUtil.DateraMetaData getDateraCred(long storagePoolId, StoragePoolDetailsDao storagePoolDetailsDao) {
 
         StoragePoolDetailVO storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_IP);
-        String managementIP = storagePoolDetail.getValue();
+        String managementIP = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
 
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_PORT);
-        int managementPort = Integer.parseInt(storagePoolDetail.getValue());
+        int managementPort = (null != storagePoolDetail) ? Integer.parseInt(storagePoolDetail.getValue()) : 7718;
 
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_USERNAME);
-        String managementUserName = storagePoolDetail.getValue();
+        String managementUserName = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
 
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.MANAGEMENT_PASSWORD);
-        String managementPassword = storagePoolDetail.getValue();
+        String managementPassword = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
 
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.STORAGE_POOL_NAME);
-        String storagePoolName = storagePoolDetail.getValue();
+        String storagePoolName = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
 
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.VOLUME_REPLICA);
-        int replica = Integer.parseInt(storagePoolDetail.getValue());
+        int replica = (null != storagePoolDetail) ? Integer.parseInt(storagePoolDetail.getValue()) : 1;
 
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.NETWORK_POOL_NAME);
-        String networkPoolName = storagePoolDetail.getValue();
+        String networkPoolName = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
 
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.APP_NAME);
-        String appInstanceName = storagePoolDetail.getValue();
+        String appInstanceName = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
 
-        return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName,appInstanceName);
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.STORAGE_NAME);
+        String storageInstanceName = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
+
+        return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName,appInstanceName,storageInstanceName);
     }
 
     public static String generateInitiatorLabel(String hostUUID)

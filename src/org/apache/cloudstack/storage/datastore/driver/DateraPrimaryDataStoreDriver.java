@@ -143,6 +143,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         {
             throw new CloudRuntimeException("Host iqn not available, cannot register the host");
         }
+/*
         List<String> initiators = new ArrayList<String>();
         initiators.add(DateraUtil.constructInitiatorName(host.getStorageUrl()));
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
@@ -150,10 +151,29 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         rest.registerInitiator(DateraUtil.generateInitiatorLabel(host.getUuid()), host.getStorageUrl());
 
         rest.updateStorageWithInitiator(dtMetaData.appInstanceName, rest.defaultStorageName, initiators,null);
+*/
+        DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
+        registerInitiatorsOnDatera(dtMetaData.mangementIP,dtMetaData.managementPort,dtMetaData.managementUserName,dtMetaData.managementPassword,dtMetaData.appInstanceName,dtMetaData.storageInstanceName,host.getStorageUrl());
         s_logger.info("End connectVolumeToHost ");
         return true;
     }
 
+    private void registerInitiatorsOnDatera(String managementIP,int managementPort,String managementUsername,String managementPassword,String appInstanceName,String storageInstanceName,String hostIqn)
+    {
+        List<String> initiators = new ArrayList<String>();
+        initiators.add(hostIqn);
+        String groupName = "cs_"+appInstanceName;
+        DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
+        storageInstanceName = rest.defaultStorageName;
+        rest.registerInitiators(initiators);
+        rest.createInitiatorGroup(groupName, initiators);
+        List<String> initiatorGroups = new ArrayList<String>();
+        initiatorGroups.add(groupName);
+        if(false == rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
+        {
+            throw new CloudRuntimeException("Could not update storage with initiator ,"+appInstanceName+", "+storageInstanceName);
+        }
+    }
     // get the VAG associated with volumeInfo's cluster, if any (ListVolumeAccessGroups) // might not exist if using CHAP
     // if the VAG exists
     //     remove the ID of volumeInfo from the VAG (ModifyVolumeAccessGroup)

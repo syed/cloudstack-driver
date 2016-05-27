@@ -166,6 +166,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         if(isDateraAccessAuthorised(hypervisorType))
         {
+            appInstanceName = storagePoolName;
             AppInstanceInfo.StorageInstance dtStorageInfo = createApplicationInstance(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName,capacityBytes,clusterId);
             if(null == dtStorageInfo || null == dtStorageInfo.access || dtStorageInfo.access.iqn == null || dtStorageInfo.access.iqn.isEmpty())
             {
@@ -212,7 +213,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         else {
             parameters.setHost(storageVip);
             parameters.setPort(storagePort);
-            parameters.setPath(iqn);
+            parameters.setPath("/"+iqn+"/0");
         }
 
         // this adds a row in the cloud.storage_pool table for this Datera volume
