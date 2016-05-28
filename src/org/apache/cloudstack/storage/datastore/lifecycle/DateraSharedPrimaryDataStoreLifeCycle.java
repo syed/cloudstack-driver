@@ -177,7 +177,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             {
                 throw new CloudRuntimeException("Storage IP not generated for the primary storage.");
             }
-
+            storageInstanceName = dtStorageInfo.name;
             iqn = dtStorageInfo.access.iqn;
             storageVip = dtStorageInfo.access.ips.get(0);
         }
@@ -186,8 +186,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             iqn="iqn";
             storageVip = clvmVolumeGroupName;
             storagePath = clvmVolumeGroupName;
-            registerInitiatorsOnDatera(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,storageInstanceName,clusterId);
         }
+        registerInitiatorsOnDatera(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,storageInstanceName,clusterId);
 
         parameters.setUuid(UUID.randomUUID().toString());
 
