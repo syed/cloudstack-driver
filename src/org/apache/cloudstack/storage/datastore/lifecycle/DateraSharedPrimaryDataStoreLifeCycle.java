@@ -67,6 +67,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
     @Inject private StoragePoolDetailsDao _storagePoolDetailsDao;
     @Inject private StoragePoolHostDao _storagePoolHostDao;
     @Inject protected TemplateManager _tmpltMgr;
+    private Long _timeout=10000L;
 
     // invoked to add primary storage that is based on the Datera plug-in
     @Override
@@ -150,6 +151,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             managementUsername = DateraUtil.getValue(DateraUtil.MANAGEMENT_USERNAME, url);
             managementPassword = DateraUtil.getValue(DateraUtil.MANAGEMENT_PASSWORD, url);
             networkPoolName = DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url);
+            //_timeout = Long.parseLong(DateraUtil.getValue("timeout", url));
         }
 
         if(HypervisorType.KVM.equals(hypervisorType))
@@ -159,14 +161,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             storageInstanceName = DateraUtil.getValue(DateraUtil.STORAGE_NAME, url);
         }
 
-        details.put(DateraUtil.MANAGEMENT_IP, managementVip);
-        details.put(DateraUtil.MANAGEMENT_PORT, String.valueOf(managementPort));
-        details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
-        details.put(DateraUtil.MANAGEMENT_PASSWORD, managementPassword);
-        details.put(DateraUtil.APP_NAME, appInstanceName);
-        details.put(DateraUtil.STORAGE_NAME, storageInstanceName);
-        details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
-        details.put(DateraUtil.CLVM_VOLUME_GROUP_NAME,clvmVolumeGroupName);
 
         long lMinIops = 100;
         long lMaxIops = 15000;
@@ -203,10 +197,19 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             storagePath = clvmVolumeGroupName;
         }
         String volumeGroupName = DateraUtil.generateInitiatorGroupName(appInstanceName);
-        details.put(DateraUtil.VOLUME_GROUP_NAME, volumeGroupName);
         registerInitiatorsOnDatera(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,storageInstanceName,volumeGroupName,clusterId);
 
         parameters.setUuid(iqn);
+
+        details.put(DateraUtil.MANAGEMENT_IP, managementVip);
+        details.put(DateraUtil.MANAGEMENT_PORT, String.valueOf(managementPort));
+        details.put(DateraUtil.MANAGEMENT_USERNAME, managementUsername);
+        details.put(DateraUtil.MANAGEMENT_PASSWORD, managementPassword);
+        details.put(DateraUtil.APP_NAME, appInstanceName);
+        details.put(DateraUtil.STORAGE_NAME, storageInstanceName);
+        details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
+        details.put(DateraUtil.CLVM_VOLUME_GROUP_NAME,clvmVolumeGroupName);
+        details.put(DateraUtil.VOLUME_GROUP_NAME, volumeGroupName);
 
         if (HypervisorType.VMware.equals(hypervisorType)) {
             String datastore = iqn.replace("/", "_");
@@ -266,7 +269,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         try {
             s_logger.info("Waiting for the datera to setup everything");
-            Thread.sleep(10000);
+            Thread.sleep(_timeout);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -590,7 +593,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         rest.setAdminState(dtMetaData.appInstanceName, false);
-        return rest.deleteAppInstance(dtMetaData.appInstanceName);
+        rest.deleteAppInstance(dtMetaData.appInstanceName);
+        return rest.deleteInitiatorGroup(dtMetaData.volumeGroupName);
     }
 
     private long getIopsValue(long storagePoolId, String iopsKey) {
