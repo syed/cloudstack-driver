@@ -39,8 +39,9 @@ public class DateraUtil {
      public String networkPoolName;
      public String appInstanceName;
      public String storageInstanceName;
+     public String volumeGroupName;
 
-        public DateraMetaData(String ip, int port, String user, String pass, String storage,int paramReplica, String nwPoolName, String appInstanceName, String storageInstanceName)
+        public DateraMetaData(String ip, int port, String user, String pass, String storage,int paramReplica, String nwPoolName, String appInstanceName, String storageInstanceName, String volumeGroupName)
         {
             this.mangementIP = ip;
             this.managementPort = port;
@@ -51,6 +52,7 @@ public class DateraUtil {
             this.networkPoolName = nwPoolName;
             this.appInstanceName = appInstanceName;
             this.storageInstanceName = storageInstanceName;
+            this.volumeGroupName = volumeGroupName;
         }
     }
     public static final String PROVIDER_NAME = "Datera";
@@ -75,6 +77,7 @@ public class DateraUtil {
 
     public static final String APP_NAME = "appName";
     public static final String STORAGE_NAME = "storageName";
+    public static final String VOLUME_GROUP_NAME = "volumeGroupName";
 
     public static final String VOLUME_REPLICA = "replica";
 
@@ -433,7 +436,10 @@ public class DateraUtil {
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.STORAGE_NAME);
         String storageInstanceName = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
 
-        return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName,appInstanceName,storageInstanceName);
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.VOLUME_GROUP_NAME);
+        String volumeGroupName = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
+
+        return new DateraMetaData(managementIP,managementPort,managementUserName,managementPassword,storagePoolName,replica,networkPoolName,appInstanceName,storageInstanceName,volumeGroupName);
     }
 
     public static String generateInitiatorLabel(String hostUUID)
@@ -444,7 +450,7 @@ public class DateraUtil {
     {
        return storagePoolName+"_"+volumeUUD;
     }
-    public static Long getVolumeSizeInBytes(int dtVolSize)
+    public static Long getVolumeSizeInBytes(long dtVolSize)
     {
          return (long)(dtVolSize*1024*1024*1024);
     }
@@ -459,5 +465,10 @@ public class DateraUtil {
 
     public static String constructVolumeName(String lunId) {
         return "volume-"+lunId;
+    }
+
+    public static String generateInitiatorGroupName(String appInstanceName) {
+
+        return "csIG_"+appInstanceName;
     }
 }
