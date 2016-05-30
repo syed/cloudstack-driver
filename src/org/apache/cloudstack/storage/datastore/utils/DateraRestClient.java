@@ -237,6 +237,40 @@ public class DateraRestClient {
     public String storageNodeUuid;
     public String ts;
  }
+ public boolean deleteInitiatorGroup(String groupName)
+ {
+      HttpDelete deleteRequest = new HttpDelete("/v2/initiator_groups/"+groupName);
+      deleteRequest.setHeader("Content-Type","application/json");
+      deleteRequest.setHeader("auth-token",respLogin.getKey());
+      String response = execute(deleteRequest);
+      DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
+      return resp.name.equals(groupName);
+ }
+ public List<String> enumerateInitiatorNames()
+ {
+    HttpGet getRequest = new HttpGet("/v2/initiators");
+    getRequest.setHeader("Content-Type","application/json");
+    getRequest.setHeader("auth-token",respLogin.getKey());
+    String response = execute(getRequest);
+    return extractInitiatorIds(response);
+ }
+ private List<String> extractInitiatorIds(String response)
+ {
+     List<String> initiators = new ArrayList<String>();
+     GsonBuilder gsonBuilder = new GsonBuilder();
+     Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
+     gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
+     Gson gson1 = gsonBuilder.create();
+
+     Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
+     for (Map.Entry<String, Object> entry : map.entrySet()) {
+          String appJson = entry.getValue().toString();
+          DateraModel.InitiatorModel initiator = gson1.fromJson(appJson, DateraModel.InitiatorModel.class);
+          initiators.add(initiator.id);
+      }
+
+     return initiators;
+ }
  public List<String> enumerateAppInstances()
  {
      List<String> apps = new ArrayList<String>();
