@@ -237,6 +237,21 @@ public class DateraRestClient {
     public String storageNodeUuid;
     public String ts;
  }
+ public boolean setQos(String appInstance, String storageInstance, String volumeName, long totalIOPS)
+ {
+     String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
+        HttpPost postRequest = new HttpPost(url);
+        postRequest.setHeader("Content-Type","application/json");
+        postRequest.setHeader("auth-token",respLogin.getKey());
+
+        DateraModel.PerformancePolicy policy = new DateraModel.PerformancePolicy(totalIOPS);
+        String payload = gson.toJson(policy);
+        setPayload(postRequest, payload);
+        String response = execute(postRequest);
+        DateraModel.PerformancePolicy resp = gson.fromJson(response, DateraModel.PerformancePolicy.class);
+
+        return resp.totalIopsMax == totalIOPS ? true : false;
+ }
  public boolean deleteInitiatorGroup(String groupName)
  {
       HttpDelete deleteRequest = new HttpDelete("/v2/initiator_groups/"+groupName);

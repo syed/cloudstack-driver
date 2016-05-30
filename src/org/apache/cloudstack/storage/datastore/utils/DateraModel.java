@@ -188,4 +188,25 @@ public class DateraModel {
        this.members = paramMembers;
       }
      }
+    public static class PerformancePolicy
+    {
+       @SerializedName("read_iops_max")
+       long readIopsMax;
+       @SerializedName("write_iops_max")
+       long writeIopsMax;
+       @SerializedName("total_iops_max")
+       long totalIopsMax;
+
+       @SerializedName("read_bandwidth_max")
+       long readBandwidthMax;
+       @SerializedName("write_bandwidth_max")
+       long writeBandwidthMax;
+       @SerializedName("total_bandwidth_max")
+       long totalBandwidthMax;
+
+       public PerformancePolicy(long totalIOPS)
+       {
+           totalIopsMax = totalIOPS;
+       }
+    }
 }
