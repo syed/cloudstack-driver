@@ -341,10 +341,10 @@ public class DateraUtil {
 
             String key = token.substring(0, index);
 
-            if (key.equalsIgnoreCase(keyToMatch)) {
+            if (key.trim().equalsIgnoreCase(keyToMatch)) {
                 String valueToReturn = token.substring(index + delimiter2.length());
 
-                return valueToReturn;
+                return valueToReturn.trim();
             }
         }
 

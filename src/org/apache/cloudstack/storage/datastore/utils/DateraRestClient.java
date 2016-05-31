@@ -444,7 +444,7 @@ private void extractAppNames(List<String> apps, String response) {
     String response = execute(postRequest);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
 
-    return resp.name.equals(appName) ? true : false;
+    return resp.name.equals(storageInstance) ? true : false;
  }
  public boolean createAppInstance(String appName)
  {
