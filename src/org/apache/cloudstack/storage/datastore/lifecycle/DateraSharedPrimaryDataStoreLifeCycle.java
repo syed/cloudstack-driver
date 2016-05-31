@@ -84,7 +84,9 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         Long capacityIops = (Long)dsInfos.get(CAPACITY_IOPS);
         String tags = (String)dsInfos.get("tags");
 
-        capacityBytes = DateraUtil.getVolumeSizeInBytes((long)DateraUtil.getVolumeSizeInGB(capacityBytes));
+        int replica=0;
+
+        capacityBytes = buildBytesPerGB(capacityBytes);
 
         @SuppressWarnings("unchecked")
         Map<String, String> details = (Map<String, String>)dsInfos.get("details");
@@ -101,8 +103,21 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             throw new IllegalArgumentException("'capacityBytes' must be present and greater than 0.");
         }
 
-        if (capacityIops == null || capacityIops <= 0) {
-            throw new IllegalArgumentException("'capacityIops' must be present and greater than 0.");
+        if (capacityIops == null || capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
+            throw new IllegalArgumentException("'capacityIops' must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
+        }
+
+        String val = DateraUtil.getValue(DateraUtil.VOLUME_REPLICA, url,false);
+        if(null == val)
+        {
+            replica = DateraUtil.DEFAULT_VOLUME_REPLICA;
+        }
+        else
+        {
+            replica = Integer.parseInt(val);
+        }
+        if (replica > DateraUtil.MAX_VOLUME_REPLICA || replica < DateraUtil.MIN_VOLUME_REPLICA) {
+            throw new IllegalArgumentException("'replica' must be between "+ DateraUtil.MIN_VOLUME_REPLICA + " and "+ DateraUtil.MAX_VOLUME_REPLICA);
         }
 
         HypervisorType hypervisorType = getHypervisorTypeForCluster(clusterId);
@@ -144,7 +159,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         String storageInstanceName = "";
         String clvmVolumeGroupName = "";
 
-        if(isDateraAccessAuthorised(hypervisorType))
+        if(isDateraSupported(hypervisorType))
         {
             managementVip = DateraUtil.getManagementIP(url);
             managementPort = DateraUtil.getManagementPort(url);
@@ -168,15 +183,15 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         String iqn = "";
         String storageVip = "";
-        int storagePort = 3260;
+        int storagePort = DateraUtil.DEFAULT_STORAGE_PORT;
         String storagePath = "";
 
-        if(isDateraAccessAuthorised(hypervisorType))
+        if(isDateraSupported(hypervisorType))
         {
             appInstanceName = storagePoolName;
             appInstanceName.replace(" ", "");
 
-            AppInstanceInfo.StorageInstance dtStorageInfo = createApplicationInstance(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName,capacityBytes,clusterId);
+            AppInstanceInfo.StorageInstance dtStorageInfo = createApplicationInstance(clusterId,managementVip,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName,capacityBytes,replica,capacityIops);
             if(null == dtStorageInfo || null == dtStorageInfo.access || dtStorageInfo.access.iqn == null || dtStorageInfo.access.iqn.isEmpty())
             {
                 throw new CloudRuntimeException("IQN not generated on the primary storage.");
@@ -242,6 +257,10 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
 
         return dataStore;
+    }
+
+    private Long buildBytesPerGB(Long capacityBytes) {
+        return DateraUtil.getVolumeSizeInBytes((long)DateraUtil.getVolumeSizeInGB(capacityBytes));
     }
 
     private void registerInitiatorsOnDatera(String managementIP,int managementPort,String managementUsername,String managementPassword,String appInstanceName,String storageInstanceName,String volumeGroupName,Long clusterId)
@@ -324,14 +343,15 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         {
             return StoragePoolType.CLVM;
         }
+/*
         if (HypervisorType.VMware.equals(hypervisorType)) {
             return StoragePoolType.VMFS;
         }
-
-        throw new CloudRuntimeException("The 'hypervisor' parameter must be '" + HypervisorType.XenServer + "' or '" + HypervisorType.VMware + "'.");
+*/
+        throw new CloudRuntimeException("The 'hypervisor' parameter must be '" + HypervisorType.XenServer + "' or '" + HypervisorType.KVM + "'.");
     }
 
-    private AppInstanceInfo.StorageInstance createApplicationInstance(String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName, String networkPoolName, Long capacityBytes, Long clusterId) {
+    private AppInstanceInfo.StorageInstance createApplicationInstance(Long clusterId,String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName, String networkPoolName, Long capacityBytes, int replica, long totalIOPS) {
 
         List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
         if(0 == hosts.size())
@@ -348,11 +368,14 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         rest.createAppInstance(appInstanceName);
         rest.createStorageInstance(appInstanceName, storageInstanceName,networkPoolName);
         int dtVolSize = DateraUtil.getVolumeSizeInGB(capacityBytes);
-        rest.createVolume(appInstanceName, storageInstanceName, volumeInstanceName, dtVolSize);
+        rest.createVolume(appInstanceName, storageInstanceName, volumeInstanceName, dtVolSize,replica);
+        rest.setQos(appInstanceName, storageInstanceName, volumeInstanceName, totalIOPS);
 
         AppInstanceInfo.VolumeInfo volInfo = rest.getVolumeInfo(appInstanceName, storageInstanceName, volumeInstanceName);
-        if(false == volInfo.name.equals(rest.defaultVolumeName))
+        if(false == volInfo.name.equals(volumeInstanceName))
         {
+           rest.setAdminState(appInstanceName, false);
+           rest.deleteAppInstance(appInstanceName);
            String err = String.format("Could not create volume /%s/%s/%s ",appInstanceName,storageInstanceName,volumeInstanceName);
            throw new CloudRuntimeException(err);
         }
@@ -577,13 +600,13 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             //unregister the initiators or remove the initiator group
         }
 
-        if(isDateraAccessAuthorised(hypervisorType))
+        if(isDateraSupported(hypervisorType))
             deleteDateraApplicationInstance(storagePool.getId());
 
         return _primaryDataStoreHelper.deletePrimaryDataStore(dataStore);
     }
 
-    private boolean isDateraAccessAuthorised(HypervisorType hypervisorType)
+    private boolean isDateraSupported(HypervisorType hypervisorType)
     {
        if(HypervisorType.VMware.equals(hypervisorType) || HypervisorType.XenServer.equals(hypervisorType))
           return true;

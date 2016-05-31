@@ -167,12 +167,12 @@ public class DateraRestClient {
   public AccessControl access;
 
  }
- public class AdminPreviledge
+ public class AdminPrivilege
  {
    @SerializedName("admin_state")
    public String adminState;
 
-   public AdminPreviledge(String paramAdminState)
+   public AdminPrivilege(String paramAdminState)
    {
     adminState = paramAdminState;
    }
@@ -323,7 +323,7 @@ private void extractAppNames(List<String> apps, String response) {
    {
         List<AppInstanceInfo.VolumeInfo> volumes = getVolumes(appInstance, storageInstance);
         String volumeName = generateNextVolumeName(volumes,"volume");
-        return createVolume(appInstance, storageInstance,volumeName,volSize) ? volumeName : "";
+        return createVolume(appInstance, storageInstance,volumeName,volSize,3) ? volumeName : "";
    }
    public List<AppInstanceInfo.VolumeInfo> getVolumes(String appInstance, String storageInstance) {
        String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes", appInstance,storageInstance);
@@ -418,12 +418,12 @@ private void extractAppNames(List<String> apps, String response) {
       return resp.name.equals(appName) ? true : false;
    }
 
- public boolean createVolume(String appName, String storageInstance, String volName, int volSize)
+ public boolean createVolume(String appName, String storageInstance, String volName, int volSize, int replica)
  {
      HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances/"+storageInstance+"/volumes");
      postRequest.setHeader("Content-Type","application/json");
      postRequest.setHeader("auth-token",respLogin.getKey());
-     VolumeModel vol = new VolumeModel(volName,volSize,3);
+     VolumeModel vol = new VolumeModel(volName,volSize,replica);
      String payload = gson.toJson(vol);
      setPayload(postRequest,payload);
      String response = execute(postRequest);
@@ -461,7 +461,7 @@ private void extractAppNames(List<String> apps, String response) {
  public boolean setAdminState(String appInstance,boolean online)
  {
   boolean ret = false;
-  AdminPreviledge prev = new AdminPreviledge( online ? "online" : "offline");
+  AdminPrivilege prev = new AdminPrivilege( online ? "online" : "offline");
 
   HttpPut putRequest = new HttpPut("/v2/app_instances/"+appInstance);
   putRequest.setHeader("Content-Type","application/json");
@@ -687,15 +687,19 @@ private void setPayload(HttpPost request, String payload) {
   String resp = "";
  try {
 
-  httpclient = getHttpClient(managementPort);
+      httpclient = getHttpClient(managementPort);
+      if(null == httpclient)
+      {
+          throw new RuntimeException("Could not load SSL certificates while connecting to datera management server");
+      }
 
-        AuthScope authScope = new AuthScope(managementIp, managementPort, AuthScope.ANY_SCHEME);
-        UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(userName, password);
+      AuthScope authScope = new AuthScope(managementIp, managementPort, AuthScope.ANY_SCHEME);
+      UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(userName, password);
 
-        httpclient.getCredentialsProvider().setCredentials(authScope, credentials);
+      httpclient.getCredentialsProvider().setCredentials(authScope, credentials);
 
- // specify the host, protocol, and port
- HttpHost target = new HttpHost(managementIp, managementPort, "https");
+      // specify the host, protocol, and port
+      HttpHost target = new HttpHost(managementIp, managementPort, "https");
 
       // specify the get request
       System.out.println("executing request to " + target);

@@ -88,6 +88,6 @@ public class AppInstanceInfo {
   public int replicaCount;
   public int size;
   @SerializedName("capacity_in_use")
-  public int capacityInUse;
+  public long capacityInUse;
  }
 }

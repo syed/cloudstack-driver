@@ -80,6 +80,9 @@ public class DateraUtil {
     public static final String VOLUME_GROUP_NAME = "volumeGroupName";
 
     public static final String VOLUME_REPLICA = "replica";
+    public static final int MAX_VOLUME_REPLICA = 5;
+    public static final int MIN_VOLUME_REPLICA = 1;
+    public static final int DEFAULT_VOLUME_REPLICA = 3;
 
     public static final String NETWORK_POOL_NAME = "networkPoolName";
     public static final String MAX_TOTAL_IOPS = "maxTotalIOPs";
@@ -88,12 +91,15 @@ public class DateraUtil {
     public static final String MAX_TOTAL_BANDWIDTH = "maxTotalBandwidth";
     public static final String MAX_READ_BANDWIDTH = "maxReadBandwidth";
     public static final String MAX_WRITE_BANDWIDTH = "maxWriteBandwidth";
+    public static final String TOTAL_IOPS = "totalIOPS";
 
 
-    public static final long MAX_IOPS_PER_VOLUME = 100000;
+    public static final long MAX_TOTAL_IOPS_PER_VOLUME = 100000;
+    public static final long MIN_TOTAL_IOPS_PER_VOLUME = 10;
+    public static final long DEFAULT_TOTAL_IOPS_PER_VOLUME = 1000;
 
     private static final int DEFAULT_MANAGEMENT_PORT = 7718;
-    private static final int DEFAULT_STORAGE_PORT = 3260;
+    public static final int DEFAULT_STORAGE_PORT = 3260;
 
     public static final String VOLUME_SIZE_NAME = "dateraVolumeSize";
 
