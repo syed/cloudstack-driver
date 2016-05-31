@@ -120,6 +120,16 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             throw new IllegalArgumentException("'replica' must be between "+ DateraUtil.MIN_VOLUME_REPLICA + " and "+ DateraUtil.MAX_VOLUME_REPLICA);
         }
 
+        val = DateraUtil.getValue("timeout", url,false);
+        if(null == val)
+        {
+            _timeout = 10000L;
+        }
+        else
+        {
+            _timeout = Long.parseLong(val);
+        }
+
         HypervisorType hypervisorType = getHypervisorTypeForCluster(clusterId);
 
         if (!isSupportedHypervisorType(hypervisorType)) {
@@ -372,13 +382,25 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         rest.setQos(appInstanceName, storageInstanceName, volumeInstanceName, totalIOPS);
 
         AppInstanceInfo.VolumeInfo volInfo = rest.getVolumeInfo(appInstanceName, storageInstanceName, volumeInstanceName);
+        boolean volumeCreationSuccess = true;
+        String err = "";
         if(false == volInfo.name.equals(volumeInstanceName))
         {
-           rest.setAdminState(appInstanceName, false);
-           rest.deleteAppInstance(appInstanceName);
-           String err = String.format("Could not create volume /%s/%s/%s ",appInstanceName,storageInstanceName,volumeInstanceName);
-           throw new CloudRuntimeException(err);
+           err = String.format("Could not create volume /%s/%s/%s ",appInstanceName,storageInstanceName,volumeInstanceName);
+           volumeCreationSuccess = false;
         }
+        else if(0 == volInfo.opState.compareTo(DateraRestClient.OP_STATE_UNAVAILABLE))
+        {
+            err = String.format("Volume's  opstate = unavailable /%s/%s/%s ",appInstanceName,storageInstanceName,volumeInstanceName);
+            volumeCreationSuccess = false;
+        }
+        if(false == volumeCreationSuccess)
+        {
+            rest.setAdminState(appInstanceName, false);
+            rest.deleteAppInstance(appInstanceName);
+            throw new CloudRuntimeException(err);
+        }
+
         //now that we have created the volume go ahead and register the host iqns
         registerInitiators(clusterId,rest);
         return rest.getStorageInfo(appInstanceName, storageInstanceName);
@@ -506,7 +528,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
     @Override
     public boolean attachZone(DataStore dataStore, ZoneScope scope, HypervisorType hypervisorType) {
-        return true;
+        throw new CloudRuntimeException("Zone scope not supported");
+        //return true;
     }
 
     @Override

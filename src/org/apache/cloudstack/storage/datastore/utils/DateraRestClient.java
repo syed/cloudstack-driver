@@ -59,6 +59,7 @@ public class DateraRestClient {
  private static final String AUTH_FAILED_ERROR = "AuthFailedError";
  private static final String DATERA_LOG_PREFIX = "Datera : ";
  private static final String VALIDATION_FAILED_ERROR = "ValidationFailedError";
+ public static final String OP_STATE_UNAVAILABLE = "unavailable";
 
  public DateraRestClient(String ip, int port,String user, String pass)
  {
