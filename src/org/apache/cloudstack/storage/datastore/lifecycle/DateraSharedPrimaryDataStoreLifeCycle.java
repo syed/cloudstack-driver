@@ -389,9 +389,9 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
            err = String.format("Could not create volume /%s/%s/%s ",appInstanceName,storageInstanceName,volumeInstanceName);
            volumeCreationSuccess = false;
         }
-        else if(0 == volInfo.opState.compareTo(DateraRestClient.OP_STATE_UNAVAILABLE))
+        else if(0 != volInfo.opState.compareTo(DateraRestClient.OP_STATE_AVAILABLE))
         {
-            err = String.format("Volume's  opstate = unavailable /%s/%s/%s ",appInstanceName,storageInstanceName,volumeInstanceName);
+            err = String.format("Volume's  opstate = %s /%s/%s/%s ",volInfo.opState,appInstanceName,storageInstanceName,volumeInstanceName);
             volumeCreationSuccess = false;
         }
         if(false == volumeCreationSuccess)

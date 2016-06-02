@@ -59,7 +59,7 @@ public class DateraRestClient {
  private static final String AUTH_FAILED_ERROR = "AuthFailedError";
  private static final String DATERA_LOG_PREFIX = "Datera : ";
  private static final String VALIDATION_FAILED_ERROR = "ValidationFailedError";
- public static final String OP_STATE_UNAVAILABLE = "unavailable";
+ public static final String OP_STATE_AVAILABLE = "available";
 
  public DateraRestClient(String ip, int port,String user, String pass)
  {
@@ -238,6 +238,29 @@ public class DateraRestClient {
     public String storageNodeUuid;
     public String ts;
  }
+    public List<String> enumerateNetworkPool() {
+        HttpGet getRequest = new HttpGet("/v2/access_network_ip_pools");
+        getRequest.setHeader("Content-Type","application/json");
+        getRequest.setHeader("auth-token",respLogin.getKey());
+        String response = execute(getRequest);
+        return extractNetworkPoolName(response);
+    }
+     private List<String> extractNetworkPoolName(String response)
+     {
+         List<String> poolNames = new ArrayList<String>();
+         GsonBuilder gsonBuilder = new GsonBuilder();
+         Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
+         gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
+         Gson gson1 = gsonBuilder.create();
+
+         Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
+         for (Map.Entry<String, Object> entry : map.entrySet()) {
+             poolNames.add(entry.getKey());
+          }
+
+         return poolNames;
+     }
+
  public boolean setQos(String appInstance, String storageInstance, String volumeName, long totalIOPS)
  {
      String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
@@ -573,6 +596,23 @@ private void setPayload(HttpPost request, String payload) {
        e.printStackTrace();
        }
 }
+public List<String> registerInitiators(Map<String,String> initiators)
+{
+    List<String> registered = new ArrayList<String>();
+    List<String> existing = getInitiators();
+    for(Map.Entry<String,String> iter : initiators.entrySet())
+    {
+        if(false == existing.contains(iter.getValue()))
+        {
+            if(registerInitiator(iter.getKey(), iter.getValue()))
+            {
+                registered.add(iter.getValue());
+            }
+        }
+    }
+    return registered;
+}
+
  public List<String> registerInitiators(List<String> initiators)
  {
      List<String> registered = new ArrayList<String>();
