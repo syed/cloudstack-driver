@@ -477,4 +477,8 @@ public class DateraUtil {
 
         return "csIG_"+appInstanceName;
     }
+    public static String constructInitiatorLabel(String hostUUID)
+    {
+    	return "cs_"+hostUUID;
+    }
 }

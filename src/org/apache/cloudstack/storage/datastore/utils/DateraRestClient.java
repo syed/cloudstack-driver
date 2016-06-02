@@ -148,12 +148,22 @@ public class DateraRestClient {
   @SerializedName("replica_count")
   public int replicaCount;
   //snapshot policies
+  @SerializedName("performance_policy")
+  DateraModel.PerformancePolicy performancePolicy;
 
   public VolumeModel(String volName,int volSize, int volReplicaSize)
   {
-   name =  volName;
-   size = volSize;
-   replicaCount = volReplicaSize;
+   this.name =  volName;
+   this.size = volSize;
+   this.replicaCount = volReplicaSize;
+  }
+
+  public VolumeModel(String volName,int volSize, int volReplicaSize, DateraModel.PerformancePolicy performancePolicy)
+  {
+   this.name =  volName;
+   this.size = volSize;
+   this.replicaCount = volReplicaSize;
+   this.performancePolicy = performancePolicy;
   }
  }
 
@@ -238,16 +248,24 @@ public class DateraRestClient {
     public String storageNodeUuid;
     public String ts;
  }
+    public List<String> enumerateInitiatorGroups()
+    {
+        HttpGet getRequest = new HttpGet("/v2/initiator_groups");
+        getRequest.setHeader("Content-Type","application/json");
+        getRequest.setHeader("auth-token",respLogin.getKey());
+        String response = execute(getRequest);
+        return extractKeys(response);
+    }
     public List<String> enumerateNetworkPool() {
         HttpGet getRequest = new HttpGet("/v2/access_network_ip_pools");
         getRequest.setHeader("Content-Type","application/json");
         getRequest.setHeader("auth-token",respLogin.getKey());
         String response = execute(getRequest);
-        return extractNetworkPoolName(response);
+        return extractKeys(response);
     }
-     private List<String> extractNetworkPoolName(String response)
+     private List<String> extractKeys(String response)
      {
-         List<String> poolNames = new ArrayList<String>();
+         List<String> keys = new ArrayList<String>();
          GsonBuilder gsonBuilder = new GsonBuilder();
          Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
          gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
@@ -255,10 +273,10 @@ public class DateraRestClient {
 
          Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
          for (Map.Entry<String, Object> entry : map.entrySet()) {
-             poolNames.add(entry.getKey());
+             keys.add(entry.getKey());
           }
 
-         return poolNames;
+         return keys;
      }
 
  public boolean setQos(String appInstance, String storageInstance, String volumeName, long totalIOPS)
@@ -649,14 +667,14 @@ public List<String> registerInitiators(Map<String,String> initiators)
        }
        return initiators;
  }
- public AppInstanceInfo createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
+ public AppInstanceInfo createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName, long totalIOPS)
  {
        HttpPost postRequest = new HttpPost("/v2/app_instances");
        postRequest.setHeader("Content-type","application/json");
        postRequest.setHeader("auth-token",respLogin.getKey());
 
        networkPoolName = "/access_network_ip_pools/"+networkPoolName;
-       String payload = generateVolumePayload(appInstanceName,initiators,initiatorGroups,volumeGB,volReplica,accessControlMode,networkPoolName);
+       String payload = generateVolumePayload(appInstanceName,initiators,initiatorGroups,volumeGB,volReplica,accessControlMode,networkPoolName,totalIOPS);
 
        s_logger.info("DateraRestClient.createVolume payload ="+ payload);
        setPayload(postRequest, payload);
@@ -670,7 +688,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
  }
 
  public String generateVolumePayload(String appInstanceName,
-   List<String> initiators, List<String> initiatorGroups, int volumeGB, int volReplica, String accessControlMode, String networkPoolName) {
+   List<String> initiators, List<String> initiatorGroups, int volumeGB, int volReplica, String accessControlMode, String networkPoolName, long totalIOPS) {
   // TODO Auto-generated method stub
   String payload = "";
 
@@ -678,7 +696,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
     new StorageInstanceModel(
       new StorageModel(networkPoolName,
         new VolumeInstanceModel(
-          new VolumeModel(defaultVolumeName, volumeGB, volReplica)),new ACLPolicyModel(initiators,initiatorGroups))));
+          new VolumeModel(defaultVolumeName, volumeGB, volReplica, new DateraModel.PerformancePolicy(totalIOPS))),new ACLPolicyModel(initiators,initiatorGroups))));
 
   payload = gson.toJson(app);
 
