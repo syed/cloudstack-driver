@@ -479,6 +479,6 @@ public class DateraUtil {
     }
     public static String constructInitiatorLabel(String hostUUID)
     {
-    	return "cs_"+hostUUID;
+        return "cs_"+hostUUID;
     }
 }

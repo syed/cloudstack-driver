@@ -49,42 +49,42 @@ public class DateraSharedStorageTests {
         List<String> initiators = registerInitiators(rest);
 
         List<String> initiatorGroups;
-		String initiatorGroupName = createInitiatorGroup(rest, initiators);
+        String initiatorGroupName = createInitiatorGroup(rest, initiators);
         
         deleteInitiatorGroup(rest, initiatorGroupName);
         
         unRegisterInitiators(rest, initiators);
     }
 
-	private void deleteInitiatorGroup(DateraRestClient rest,
-			String initiatorGroupName) {
-		List<String> initiatorGroups;
-		rest.deleteInitiatorGroup(initiatorGroupName);
+    private void deleteInitiatorGroup(DateraRestClient rest,
+            String initiatorGroupName) {
+        List<String> initiatorGroups;
+        rest.deleteInitiatorGroup(initiatorGroupName);
         initiatorGroups = rest.enumerateInitiatorGroups();
         assertEquals(false, initiatorGroups.contains(initiatorGroupName));
-	}
+    }
 
-	private String createInitiatorGroup(DateraRestClient rest,
-			List<String> initiators) {
-		String initiatorGroupName = "myGroup";
+    private String createInitiatorGroup(DateraRestClient rest,
+            List<String> initiators) {
+        String initiatorGroupName = "myGroup";
         List<String> initiatorGroups = rest.enumerateInitiatorGroups();
         for(;;)
         {
-        	if(false == initiatorGroups.contains(initiatorGroupName))
-        	{
-        		break;
-        	}
-        	else
-        	{
-        		initiatorGroupName = initiatorGroupName+Math.random();
-        	}
+            if(false == initiatorGroups.contains(initiatorGroupName))
+            {
+                break;
+            }
+            else
+            {
+                initiatorGroupName = initiatorGroupName+Math.random();
+            }
         }
         rest.createInitiatorGroup(initiatorGroupName, initiators);
           
         initiatorGroups = rest.enumerateInitiatorGroups();
         assertEquals(true, initiatorGroups.contains(initiatorGroupName));
-		return initiatorGroupName;
-	}
+        return initiatorGroupName;
+    }
     @Test
     public void utRegisterPrimaryStorage() 
     {
@@ -113,12 +113,14 @@ public class DateraSharedStorageTests {
         String err = "";
         assertTrue(volInfo.name.equals(volumeInstanceName));
         assertTrue(0 == volInfo.opState.compareTo(DateraRestClient.OP_STATE_AVAILABLE));
-
+        
+/*
         AppInstanceInfo.StorageInstance storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
         deleteAppInstance(appInstanceName, rest);
         
         deleteInitiatorGroup(rest, initiatorGroupName);
         unRegisterInitiators(rest, initiators);
+*/        
         
     }
 
@@ -138,18 +140,25 @@ public class DateraSharedStorageTests {
         assertTrue(initiators.contains(DateraCommon.INITIATOR_4));
         assertTrue(initiators.contains(DateraCommon.INITIATOR_5));
         
+        initiators.clear();
+        for(Map.Entry<String, String> iter : initiatorsMap.entrySet())
+        {
+            initiators.add(iter.getValue());
+        }
+            
+        
         return initiators;
-	}
+    }
     
     private void unRegisterInitiators(DateraRestClient rest, List<String> initiators)
     {
-    	for(String iter : initiators)
-    	{
+        for(String iter : initiators)
+        {
             rest.unregisterInitiator(iter);
-    	}
+        }
     }
 
-	private void deleteAppInstance(String appInstanceName, DateraRestClient rest) {
+    private void deleteAppInstance(String appInstanceName, DateraRestClient rest) {
         rest.setAdminState(appInstanceName, false);
         rest.deleteAppInstance(appInstanceName);
     }

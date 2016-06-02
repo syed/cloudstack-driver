@@ -187,10 +187,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
 
 
-        long lMinIops = 100;
-        long lMaxIops = 15000;
-        long lBurstIops = 15000;
-
         String iqn = "";
         String storageVip = "";
         int storagePort = DateraUtil.DEFAULT_STORAGE_PORT;
@@ -276,10 +272,11 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
     private void registerInitiatorsOnDatera(String managementIP,int managementPort,String managementUsername,String managementPassword,String appInstanceName,String storageInstanceName,String volumeGroupName,Long clusterId)
     {
         List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
-        List<String> initiators = new ArrayList<String>();
+        Map<String,String> initiators = new HashMap<String,String>();
+
         for(HostVO host : hosts)
         {
-            initiators.add(host.getStorageUrl());
+            initiators.put(DateraUtil.constructInitiatorLabel(host.getUuid()) ,host.getStorageUrl());
         }
         if(0 == initiators.size())
         {
@@ -288,7 +285,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
         rest.registerInitiators(initiators);
-        rest.createInitiatorGroup(volumeGroupName, initiators);
+        List<String> listIqns = new ArrayList<String>(initiators.values());
+        rest.createInitiatorGroup(volumeGroupName, listIqns);
         List<String> initiatorGroups = new ArrayList<String>();
         initiatorGroups.add(volumeGroupName);
         if(false == rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
@@ -297,7 +295,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
 
         try {
-            s_logger.info("Waiting for the datera to setup everything");
+            s_logger.info("Waiting for the datera to setup everything , "+_timeout);
             Thread.sleep(_timeout);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
@@ -373,6 +371,9 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         if(rest.isAppInstanceExists(appInstanceName))
              throw new CloudRuntimeException("App name already exists : "+appInstanceName);
 
+        if(false == rest.enumerateNetworkPool().contains(networkPoolName))
+            throw new CloudRuntimeException("Network pool does not exists : "+networkPoolName);
+
         String storageInstanceName = rest.defaultStorageName;
         String volumeInstanceName = rest.defaultVolumeName;
         rest.createAppInstance(appInstanceName);
@@ -402,21 +403,9 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
 
         //now that we have created the volume go ahead and register the host iqns
-        registerInitiators(clusterId,rest);
         return rest.getStorageInfo(appInstanceName, storageInstanceName);
      }
 
-    private void registerInitiators(Long clusterId,DateraRestClient rest) {
-        // now that we have a DataStore (we need the id from the DataStore instance), we can create a Volume Access Group, if need be, and
-        // place the newly created volume in the Volume Access Group
-        List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
-        ClusterVO cluster = _clusterDao.findById(clusterId);
-
-        for(HostVO host : hosts)
-        {
-           rest.registerInitiator(host.getName(), host.getStorageUrl());
-        }
- }
 
     @Override
     public boolean attachHost(DataStore store, HostScope scope, StoragePoolInfo existingInfo) {
@@ -682,11 +671,32 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         Long capacityIops = strCapacityIops != null ? Long.parseLong(strCapacityIops) : null;
 
 
-        long size = capacityBytes != null ? capacityBytes : storagePool.getCapacityBytes();
+        long newSize = capacityBytes != null ? capacityBytes : storagePool.getCapacityBytes();
+
+        if(newSize < storagePool.getCapacityBytes())
+        {
+             throw new CloudRuntimeException("Cannot shrink the capacity bytes, from "+ storagePool.getCapacityBytes()+", to requested capacity bytes"+ newSize );
+        }
+
+        if (capacityIops == null || capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
+            throw new IllegalArgumentException("'capacityIops' must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
+        }
+
 
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         //update the volume capacity, resize the volume
+
+        if(newSize != storagePool.getCapacityIops())
+        {
+            newSize = buildBytesPerGB(newSize);
+            int dtVolumeSize = DateraUtil.getVolumeSizeInGB(newSize);
+            rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, dtVolumeSize);
+        }
+        if(capacityIops != storagePool.getCapacityIops())
+        {
+            rest.setQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, capacityIops);
+        }
     }
 
 }
