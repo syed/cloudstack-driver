@@ -29,7 +29,7 @@ public class DateraSharedStorageTests {
         DateraRestClient rest = new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
         List<String> poolNames = rest.enumerateNetworkPool();
         assertTrue(poolNames.size()>0);
-        assertTrue(poolNames.contains("default"));//for the default storage pool name
+        assertTrue(poolNames.contains(DateraCommon.DEFAULT_NETWORK_POOL_NAME));//for the default storage pool name
         
     }
 
@@ -88,39 +88,48 @@ public class DateraSharedStorageTests {
     @Test
     public void utRegisterPrimaryStorage() 
     {
-        String appInstanceName = generateAppName();
-        String networkPoolName = "default";
-        long capacityBytes = 5368709120L;
-        int replica = 3;
-        long totalIOPS = 1000;
+        String appInstanceName = DateraCommon.generateAppName();
+        String networkPoolName = DateraCommon.DEFAULT_NETWORK_POOL_NAME;
+        long capacityBytes = DateraCommon.DEFAULT_CAPACITY_BYTES;
+        int replica = DateraCommon.DEFAULT_REPLICA;
+        long totalIOPS = DateraCommon.DEFAULT_CAPACITY_IOPS;
         String accessControlMode = "allow_all";
         int dtVolSize = DateraUtil.getVolumeSizeInGB(capacityBytes);
 
         DateraRestClient rest = new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
-        assertTrue(rest.isAppInstanceExists(appInstanceName));
-        assertEquals(0,rest.enumerateNetworkPool().contains(networkPoolName));
+        assertEquals(false,rest.isAppInstanceExists(appInstanceName));
+        assertEquals(true,rest.enumerateNetworkPool().contains(networkPoolName));
         
         String storageInstanceName = rest.defaultStorageName;
         String volumeInstanceName = rest.defaultVolumeName;
         
+        rest.createVolume(appInstanceName, null, null, dtVolSize, replica, accessControlMode, networkPoolName);
+        AppInstanceInfo.VolumeInfo volInfo = rest.getVolumeInfo(appInstanceName, storageInstanceName, volumeInstanceName);
+        assertTrue(volInfo.name.equals(volumeInstanceName));
+        assertTrue(0 == volInfo.opState.compareTo(DateraRestClient.OP_STATE_AVAILABLE));
+        
+
+        AppInstanceInfo.StorageInstance storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
+        assertEquals(dtVolSize, storageInfo.volumes.volume1.size);
+        assertEquals(replica, storageInfo.volumes.volume1.replicaCount);
+        assertTrue(storageInfo.ipPool.contains(networkPoolName));
+        assertEquals(0,storageInfo.aclPolicy.initiatorGroups.size());
+
         List<String> initiators = registerInitiators(rest);
         String initiatorGroupName = createInitiatorGroup(rest, initiators);
         List<String> initiatorGroups = new ArrayList<String>();
         initiatorGroups.add(initiatorGroupName);
-        rest.createVolume(appInstanceName, null, initiatorGroups, dtVolSize, replica, accessControlMode, networkPoolName,totalIOPS);
-        AppInstanceInfo.VolumeInfo volInfo = rest.getVolumeInfo(appInstanceName, storageInstanceName, volumeInstanceName);
-        boolean volumeCreationSuccess = true;
-        String err = "";
-        assertTrue(volInfo.name.equals(volumeInstanceName));
-        assertTrue(0 == volInfo.opState.compareTo(DateraRestClient.OP_STATE_AVAILABLE));
+        rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups);
+        storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
+        assertEquals(1,storageInfo.aclPolicy.initiatorGroups.size());
+        assertTrue(storageInfo.aclPolicy.initiatorGroups.get(0).contains(initiatorGroupName));
         
-/*
-        AppInstanceInfo.StorageInstance storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
         deleteAppInstance(appInstanceName, rest);
+        assertEquals(false,rest.isAppInstanceExists(appInstanceName));
         
         deleteInitiatorGroup(rest, initiatorGroupName);
         unRegisterInitiators(rest, initiators);
-*/        
+        
         
     }
 
@@ -159,14 +168,9 @@ public class DateraSharedStorageTests {
     }
 
     private void deleteAppInstance(String appInstanceName, DateraRestClient rest) {
-        rest.setAdminState(appInstanceName, false);
-        rest.deleteAppInstance(appInstanceName);
+        assertTrue(rest.setAdminState(appInstanceName, false));
+        assertTrue(rest.deleteAppInstance(appInstanceName));
     }
 
-    private String generateAppName() {
-        DateFormat df = new SimpleDateFormat("dd-MM-yy-HH-mm-ss");
-        Date date = new Date();
-        String appInstanceName = "App-"+df.format(date);
-        return appInstanceName;
-    }
+
 }

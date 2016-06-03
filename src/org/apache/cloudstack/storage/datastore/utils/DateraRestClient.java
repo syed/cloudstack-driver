@@ -60,6 +60,7 @@ public class DateraRestClient {
  private static final String DATERA_LOG_PREFIX = "Datera : ";
  private static final String VALIDATION_FAILED_ERROR = "ValidationFailedError";
  public static final String OP_STATE_AVAILABLE = "available";
+ public static final String ACCESS_CONTROL_MODE_ALLOW_ALL="allow_all";
 
  public DateraRestClient(String ip, int port,String user, String pass)
  {
@@ -98,9 +99,9 @@ public class DateraRestClient {
 
   public AppModel(String appInstanceName, String accessControlMode, StorageInstanceModel inst)
   {
-   name = appInstanceName;
-   accessControlMode = accessControlMode;
-   storageInstances = inst;
+   this.name = appInstanceName;
+   this.accessControlMode = accessControlMode;
+   this.storageInstances = inst;
   }
  }
 
@@ -667,14 +668,23 @@ public List<String> registerInitiators(Map<String,String> initiators)
        }
        return initiators;
  }
- public AppInstanceInfo createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName, long totalIOPS)
+ public AppInstanceInfo createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
  {
+     if(null != initiators)
+     {
+         initiators = constructInitiatorList(initiators);
+     }
+     if(null != initiatorGroups)
+     {
+         initiatorGroups = constructInitiatorGroups(initiatorGroups);
+     }
+
        HttpPost postRequest = new HttpPost("/v2/app_instances");
        postRequest.setHeader("Content-type","application/json");
        postRequest.setHeader("auth-token",respLogin.getKey());
 
        networkPoolName = "/access_network_ip_pools/"+networkPoolName;
-       String payload = generateVolumePayload(appInstanceName,initiators,initiatorGroups,volumeGB,volReplica,accessControlMode,networkPoolName,totalIOPS);
+       String payload = generateVolumePayload(appInstanceName,initiators,initiatorGroups,volumeGB,volReplica,accessControlMode,networkPoolName);
 
        s_logger.info("DateraRestClient.createVolume payload ="+ payload);
        setPayload(postRequest, payload);
@@ -688,7 +698,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
  }
 
  public String generateVolumePayload(String appInstanceName,
-   List<String> initiators, List<String> initiatorGroups, int volumeGB, int volReplica, String accessControlMode, String networkPoolName, long totalIOPS) {
+   List<String> initiators, List<String> initiatorGroups, int volumeGB, int volReplica, String accessControlMode, String networkPoolName) {
   // TODO Auto-generated method stub
   String payload = "";
 
@@ -696,7 +706,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
     new StorageInstanceModel(
       new StorageModel(networkPoolName,
         new VolumeInstanceModel(
-          new VolumeModel(defaultVolumeName, volumeGB, volReplica, new DateraModel.PerformancePolicy(totalIOPS))),new ACLPolicyModel(initiators,initiatorGroups))));
+          new VolumeModel(defaultVolumeName, volumeGB, volReplica)),new ACLPolicyModel(initiators,initiatorGroups))));
 
   payload = gson.toJson(app);
 

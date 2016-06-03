@@ -20,6 +20,7 @@ import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
+import org.apache.cloudstack.storage.datastore.utils.DateraRestClientMgr;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.apache.cloudstack.storage.volume.datastore.PrimaryDataStoreHelper;
 
@@ -191,13 +192,15 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         String storageVip = "";
         int storagePort = DateraUtil.DEFAULT_STORAGE_PORT;
         String storagePath = "";
+        DateraRestClient rest= new DateraRestClient(managementVip, managementPort, managementUsername, managementPassword);
 
         if(isDateraSupported(hypervisorType))
         {
             appInstanceName = storagePoolName;
             appInstanceName.replace(" ", "");
+            validateHostsAvailability(clusterId);
+            AppInstanceInfo.StorageInstance dtStorageInfo = DateraRestClientMgr.getInstance().createVolume(rest, managementVip, managementPort, managementUsername, managementPassword, appInstanceName, networkPoolName, capacityBytes, replica, capacityIops);
 
-            AppInstanceInfo.StorageInstance dtStorageInfo = createApplicationInstance(clusterId,managementVip,managementPort,managementUsername,managementPassword,appInstanceName,networkPoolName,capacityBytes,replica,capacityIops);
             if(null == dtStorageInfo || null == dtStorageInfo.access || dtStorageInfo.access.iqn == null || dtStorageInfo.access.iqn.isEmpty())
             {
                 throw new CloudRuntimeException("IQN not generated on the primary storage.");
@@ -218,7 +221,10 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             storagePath = clvmVolumeGroupName;
         }
         String volumeGroupName = DateraUtil.generateInitiatorGroupName(appInstanceName);
-        registerInitiatorsOnDatera(managementVip,managementPort,managementUsername,managementPassword,appInstanceName,storageInstanceName,volumeGroupName,clusterId);
+        Map<String, String> initiators = extractInitiators(clusterId);
+        DateraRestClientMgr.getInstance().registerInitiators(rest, managementVip, managementPort,
+                managementUsername, managementPassword, appInstanceName,
+                storageInstanceName, volumeGroupName, initiators, _timeout);
 
         parameters.setUuid(iqn);
 
@@ -264,13 +270,22 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         return dataStore;
     }
+    private boolean validateHostsAvailability(long clusterId)
+    {
+       boolean ret = false;
+       List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
+       if(0 == hosts.size())
+       {
+          throw new CloudRuntimeException("Cannot create volume, there are no hosts available in the cluster");
+       }
+       return ret;
+    }
 
     private Long buildBytesPerGB(Long capacityBytes) {
         return DateraUtil.getVolumeSizeInBytes((long)DateraUtil.getVolumeSizeInGB(capacityBytes));
     }
 
-    private void registerInitiatorsOnDatera(String managementIP,int managementPort,String managementUsername,String managementPassword,String appInstanceName,String storageInstanceName,String volumeGroupName,Long clusterId)
-    {
+    private Map<String, String> extractInitiators(Long clusterId) {
         List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
         Map<String,String> initiators = new HashMap<String,String>();
 
@@ -282,57 +297,10 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         {
            throw new CloudRuntimeException("The hosts do not have initiators");
         }
-
-        DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
-        rest.registerInitiators(initiators);
-        List<String> listIqns = new ArrayList<String>(initiators.values());
-        rest.createInitiatorGroup(volumeGroupName, listIqns);
-        List<String> initiatorGroups = new ArrayList<String>();
-        initiatorGroups.add(volumeGroupName);
-        if(false == rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
-        {
-            throw new CloudRuntimeException("Could not update storage with initiator ,"+appInstanceName+", "+storageInstanceName);
-        }
-
-        try {
-            s_logger.info("Waiting for the datera to setup everything , "+_timeout);
-            Thread.sleep(_timeout);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-/*
-        boolean initiatorGroupUpdateSuccess = false;
-        for(int i = 0; i< 10; i++)
-        {
-            try {
-                s_logger.info("Validating initiator update iteration = "+i);
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            AppInstanceInfo.StorageInstance storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
-
-            for(String iter : storageInfo.aclPolicy.initiatorGroups)
-            {
-                if(iter.contains(volumeGroupName))
-                {
-                    initiatorGroupUpdateSuccess = true;
-                    break;
-                }
-            }
-
-            if(initiatorGroupUpdateSuccess)
-                break;
-        }
-
-        if(false  == initiatorGroupUpdateSuccess)
-        {
-            throw new CloudRuntimeException("Failed to vaildate initiator groups update ,"+appInstanceName+", "+storageInstanceName+", "+volumeGroupName);
-        }
-*/
+        return initiators;
     }
+
+
     private HypervisorType getHypervisorTypeForCluster(long clusterId) {
         ClusterVO cluster = _clusterDao.findById(clusterId);
 
@@ -358,54 +326,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 */
         throw new CloudRuntimeException("The 'hypervisor' parameter must be '" + HypervisorType.XenServer + "' or '" + HypervisorType.KVM + "'.");
     }
-
-    private AppInstanceInfo.StorageInstance createApplicationInstance(Long clusterId,String managementIP, int managementPort, String managementUsername, String managementPassword, String appInstanceName, String networkPoolName, Long capacityBytes, int replica, long totalIOPS) {
-
-        List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
-        if(0 == hosts.size())
-        {
-           throw new CloudRuntimeException("Cannot create volume, there are no hosts available in the cluster");
-        }
-
-        DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
-        if(rest.isAppInstanceExists(appInstanceName))
-             throw new CloudRuntimeException("App name already exists : "+appInstanceName);
-
-        if(false == rest.enumerateNetworkPool().contains(networkPoolName))
-            throw new CloudRuntimeException("Network pool does not exists : "+networkPoolName);
-
-        String storageInstanceName = rest.defaultStorageName;
-        String volumeInstanceName = rest.defaultVolumeName;
-        rest.createAppInstance(appInstanceName);
-        rest.createStorageInstance(appInstanceName, storageInstanceName,networkPoolName);
-        int dtVolSize = DateraUtil.getVolumeSizeInGB(capacityBytes);
-        rest.createVolume(appInstanceName, storageInstanceName, volumeInstanceName, dtVolSize,replica);
-        rest.setQos(appInstanceName, storageInstanceName, volumeInstanceName, totalIOPS);
-
-        AppInstanceInfo.VolumeInfo volInfo = rest.getVolumeInfo(appInstanceName, storageInstanceName, volumeInstanceName);
-        boolean volumeCreationSuccess = true;
-        String err = "";
-        if(false == volInfo.name.equals(volumeInstanceName))
-        {
-           err = String.format("Could not create volume /%s/%s/%s ",appInstanceName,storageInstanceName,volumeInstanceName);
-           volumeCreationSuccess = false;
-        }
-        else if(0 != volInfo.opState.compareTo(DateraRestClient.OP_STATE_AVAILABLE))
-        {
-            err = String.format("Volume's  opstate = %s /%s/%s/%s ",volInfo.opState,appInstanceName,storageInstanceName,volumeInstanceName);
-            volumeCreationSuccess = false;
-        }
-        if(false == volumeCreationSuccess)
-        {
-            rest.setAdminState(appInstanceName, false);
-            rest.deleteAppInstance(appInstanceName);
-            throw new CloudRuntimeException(err);
-        }
-
-        //now that we have created the volume go ahead and register the host iqns
-        return rest.getStorageInfo(appInstanceName, storageInstanceName);
-     }
-
 
     @Override
     public boolean attachHost(DataStore store, HostScope scope, StoragePoolInfo existingInfo) {
@@ -626,10 +546,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
     }
     private boolean deleteDateraApplicationInstance(long storagePoolId) {
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
-        DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
-        rest.setAdminState(dtMetaData.appInstanceName, false);
-        rest.deleteAppInstance(dtMetaData.appInstanceName);
-        return rest.deleteInitiatorGroup(dtMetaData.volumeGroupName);
+        return DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(dtMetaData);
     }
 
     private long getIopsValue(long storagePoolId, String iopsKey) {
@@ -690,12 +607,11 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         if(newSize != storagePool.getCapacityIops())
         {
             newSize = buildBytesPerGB(newSize);
-            int dtVolumeSize = DateraUtil.getVolumeSizeInGB(newSize);
-            rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, dtVolumeSize);
+            DateraRestClientMgr.getInstance().updatePrimaryStorageCapacityBytes(rest, dtMetaData, newSize);
         }
         if(capacityIops != storagePool.getCapacityIops())
         {
-            rest.setQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, capacityIops);
+            DateraRestClientMgr.getInstance().updatePrimaryStorageIOPS(rest, dtMetaData, capacityIops);
         }
     }
 
