@@ -606,7 +606,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         if(newSize != storagePool.getCapacityIops())
         {
-            newSize = buildBytesPerGB(newSize);
             DateraRestClientMgr.getInstance().updatePrimaryStorageCapacityBytes(rest, dtMetaData, newSize);
         }
         if(capacityIops != storagePool.getCapacityIops())

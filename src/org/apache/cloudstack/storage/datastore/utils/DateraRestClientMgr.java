@@ -121,9 +121,10 @@ public class DateraRestClientMgr {
         {
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
-        long newSize = DateraUtil.getVolumeSizeInBytes((long)DateraUtil.getVolumeSizeInGB(capacityBytes));
-        int dtVolumeSize = DateraUtil.getVolumeSizeInGB(newSize);
-        return rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, dtVolumeSize);
+        int dtVolumeSize = getDateraCompatibleVolumeInGB(capacityBytes);
+        rest.setAdminState(dtMetaData.appInstanceName, false);
+        rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, dtVolumeSize);
+        return  rest.setAdminState(dtMetaData.appInstanceName, true);
     }
     public boolean updatePrimaryStorageIOPS(DateraRestClient rest,DateraUtil.DateraMetaData dtMetaData, long capacityIops)
     {
@@ -132,6 +133,24 @@ public class DateraRestClientMgr {
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         return rest.setQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, capacityIops);
+    }
+
+    public AppInstanceInfo.StorageInstance getStorageInfo(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData)
+    {
+        if(null == rest)
+        {
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        return rest.getStorageInfo(dtMetaData.appInstanceName, dtMetaData.storageInstanceName);
+    }
+    public long getCloudstackCompatibleVolumeSize(int volSize)
+    {
+         return DateraUtil.getVolumeSizeInBytes(volSize);
+    }
+    public int getDateraCompatibleVolumeInGB(long capacityBytes)
+    {
+        capacityBytes = DateraUtil.getVolumeSizeInBytes((long)DateraUtil.getVolumeSizeInGB(capacityBytes));
+        return DateraUtil.getVolumeSizeInGB(capacityBytes);
     }
 
 }
