@@ -21,6 +21,7 @@ package org.apache.cloudstack.storage.test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,15 +41,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
-//import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-/*
-import com.cloud.agent.api.Answer;
-import com.cloud.agent.api.to.DataObjectType;
-import com.cloud.storage.VolumeVO;
-import com.cloud.storage.Storage.StoragePoolType;
-import com.cloud.user.AccountVO;
-import com.cloud.utils.exception.CloudRuntimeException;
-*/
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class DateraRestClientTest {
@@ -73,7 +66,7 @@ public class DateraRestClientTest {
     	assertTrue(client.setAdminState(APPINSTNAME, false));
     	assertTrue(client.deleteAppInstance(APPINSTNAME));
     }
-/*
+
     @Test
     public void testCreateVolume(){
     	
@@ -270,7 +263,7 @@ public class DateraRestClientTest {
 
         initiators = rest.getInitiators();
         rest.unregisterInitiator(iqn);
-    }*/
+    }
     
     @Test
     public void testSetQos() {
