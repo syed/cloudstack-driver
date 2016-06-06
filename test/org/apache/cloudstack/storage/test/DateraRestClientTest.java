@@ -214,6 +214,7 @@ public class DateraRestClientTest {
     public void testResizeVolume() {
     	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
     	assertTrue(client.createVolume(APPINSTNAME, client.defaultStorageName, "vol-6", 1, 2));
+    	assertTrue(client.setAdminState(APPINSTNAME, false));
     	assertTrue(client.resizeVolume(APPINSTNAME, client.defaultStorageName, "vol-6", 2));
     }
     

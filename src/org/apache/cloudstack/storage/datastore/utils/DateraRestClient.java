@@ -29,6 +29,7 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
@@ -249,23 +250,32 @@ public class DateraRestClient {
     public String storageNodeUuid;
     public String ts;
  }
+ private void setHeaders(HttpRequestBase request)
+ {
+     if(null != request)
+     {
+         request.setHeader("Content-Type","application/json");
+         if(null != respLogin.getKey())
+          request.setHeader("auth-token",respLogin.getKey());
+     }
+ }
     public List<String> enumerateInitiatorGroups()
     {
         HttpGet getRequest = new HttpGet("/v2/initiator_groups");
-        getRequest.setHeader("Content-Type","application/json");
-        getRequest.setHeader("auth-token",respLogin.getKey());
+        setHeaders(getRequest);
         String response = execute(getRequest);
         return extractKeys(response);
     }
     public List<String> enumerateNetworkPool() {
         HttpGet getRequest = new HttpGet("/v2/access_network_ip_pools");
-        getRequest.setHeader("Content-Type","application/json");
-        getRequest.setHeader("auth-token",respLogin.getKey());
+        setHeaders(getRequest);
         String response = execute(getRequest);
         return extractKeys(response);
     }
      private List<String> extractKeys(String response)
      {
+         if(null == response)
+             return null;
          List<String> keys = new ArrayList<String>();
          GsonBuilder gsonBuilder = new GsonBuilder();
          Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
@@ -284,8 +294,7 @@ public class DateraRestClient {
  {
      String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
         HttpPost postRequest = new HttpPost(url);
-        postRequest.setHeader("Content-Type","application/json");
-        postRequest.setHeader("auth-token",respLogin.getKey());
+        setHeaders(postRequest);
 
         DateraModel.PerformancePolicy policy = new DateraModel.PerformancePolicy(totalIOPS);
         String payload = gson.toJson(policy);
@@ -293,71 +302,39 @@ public class DateraRestClient {
         String response = execute(postRequest);
         DateraModel.PerformancePolicy resp = gson.fromJson(response, DateraModel.PerformancePolicy.class);
 
+        if(null == resp) return false;
         return resp.totalIopsMax == totalIOPS ? true : false;
  }
  public boolean deleteInitiatorGroup(String groupName)
  {
       HttpDelete deleteRequest = new HttpDelete("/v2/initiator_groups/"+groupName);
-      deleteRequest.setHeader("Content-Type","application/json");
-      deleteRequest.setHeader("auth-token",respLogin.getKey());
+      setHeaders(deleteRequest);
       String response = execute(deleteRequest);
       DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
+
+      if(null == resp) return false;
       return resp.name.equals(groupName);
  }
  public List<String> enumerateInitiatorNames()
  {
     HttpGet getRequest = new HttpGet("/v2/initiators");
-    getRequest.setHeader("Content-Type","application/json");
-    getRequest.setHeader("auth-token",respLogin.getKey());
+    setHeaders(getRequest);
     String response = execute(getRequest);
-    return extractInitiatorIds(response);
- }
- private List<String> extractInitiatorIds(String response)
- {
-     List<String> initiators = new ArrayList<String>();
-     GsonBuilder gsonBuilder = new GsonBuilder();
-     Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
-     gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
-     Gson gson1 = gsonBuilder.create();
-
-     Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
-     for (Map.Entry<String, Object> entry : map.entrySet()) {
-          String appJson = entry.getValue().toString();
-          DateraModel.InitiatorModel initiator = gson1.fromJson(appJson, DateraModel.InitiatorModel.class);
-          initiators.add(initiator.id);
-      }
-
-     return initiators;
+    return extractKeys(response);
  }
  public List<String> enumerateAppInstances()
  {
-     List<String> apps = new ArrayList<String>();
      HttpGet getRequest = new HttpGet("/v2/app_instances");
-     getRequest.setHeader("auth-token",respLogin.getKey());
+     setHeaders(getRequest);
      String response = execute(getRequest);
 
-     extractAppNames(apps, response);
-
-     return apps;
+     return extractKeys(response);
  }
-private void extractAppNames(List<String> apps, String response) {
-     GsonBuilder gsonBuilder = new GsonBuilder();
-     Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
-     gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
-     Gson gson1 = gsonBuilder.create();
-
-     Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
-     for (Map.Entry<String, Object> entry : map.entrySet()) {
-          String appJson = entry.getValue().toString();
-          AppInstanceInfo app = gson1.fromJson(appJson, AppInstanceInfo.class);
-          apps.add(app.name);
-      }
-}
    public AppInstanceInfo.VolumeInfo getVolumeInfo(String appInstance, String storageInstance, String volumeName)
    {
        String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s", appInstance,storageInstance,volumeName);
        HttpGet getRequest = new HttpGet(restPath);
-       getRequest.setHeader("auth-token",respLogin.getKey());
+       setHeaders(getRequest);
        String response = execute(getRequest);
        AppInstanceInfo.VolumeInfo resp = gson.fromJson(response, AppInstanceInfo.VolumeInfo.class);
        return resp;
@@ -371,7 +348,7 @@ private void extractAppNames(List<String> apps, String response) {
    public List<AppInstanceInfo.VolumeInfo> getVolumes(String appInstance, String storageInstance) {
        String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes", appInstance,storageInstance);
        HttpGet getRequest = new HttpGet(restPath);
-       getRequest.setHeader("auth-token",respLogin.getKey());
+       setHeaders(getRequest);
        String response = execute(getRequest);
        return getVolumeList(response);
 
@@ -409,33 +386,31 @@ private void extractAppNames(List<String> apps, String response) {
       StorageInitiator storage = new StorageInitiator(initiators,initiatorGroups);
 
       HttpPut putRequest = new HttpPut("/v2/app_instances/"+appInstance+"/storage_instances/"+storageInstance);
-      putRequest.setHeader("Content-Type","application/json");
-      putRequest.setHeader("auth-token",respLogin.getKey());
+      setHeaders(putRequest);
       String payload = gson.toJson(storage);
 
       setPayload(putRequest, payload);
 
       String response = execute(putRequest);
       GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+      if(null == respObj) return false;
       return respObj.name.equals(storageInstance) ? true : false;
 
  }
  public boolean unregisterInitiator(String iqn)
  {
     HttpDelete deleteRequest = new HttpDelete("/v2/initiators/"+iqn);
-    deleteRequest.setHeader("Content-Type","application/json");
-    deleteRequest.setHeader("auth-token",respLogin.getKey());
+    setHeaders(deleteRequest);
     String response = execute(deleteRequest);
     s_logger.info("DateraRestClient.unregisterInitiator response ="+response);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
-
+    if(null == resp) return false;
     return resp.id.equals(iqn) ? true : false;
  }
  public boolean registerInitiator(String labelName, String iqn)
  {
     HttpPost postRequest = new HttpPost("/v2/initiators");
-    postRequest.setHeader("Content-Type","application/json");
-    postRequest.setHeader("auth-token",respLogin.getKey());
+    setHeaders(postRequest);
 
     InitiatorModel initiator = new InitiatorModel(labelName, iqn);
     String payload = gson.toJson(initiator);
@@ -443,78 +418,75 @@ private void extractAppNames(List<String> apps, String response) {
     String response = execute(postRequest);
     s_logger.info("DateraRestClient.registerInitiator response ="+response);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+    if(null == resp) return false;
     if(resp.name.equals(CONFLICT_ERROR))
     {
         DateraError error = gson.fromJson(response, DateraError.class);
-        //throw new RuntimeException("Datera : register initiator, "+error.message);
+        //the iqn already exists, no need to panic
+        return true;
     }
     return resp.name.equals(labelName) ? true : false;
  }
    public boolean isAppInstanceExists(String appName)
    {
       HttpGet getRequest = new HttpGet("/v2/app_instances/"+appName);
-      getRequest.setHeader("Content-Type","application/json");
-      getRequest.setHeader("auth-token",respLogin.getKey());
+      setHeaders(getRequest);
       String response = execute(getRequest);
       GenericResponse resp = gson.fromJson(response, GenericResponse.class);
-
+      if(null == resp) return false;
       return resp.name.equals(appName) ? true : false;
    }
 
  public boolean createVolume(String appName, String storageInstance, String volName, int volSize, int replica)
  {
      HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances/"+storageInstance+"/volumes");
-     postRequest.setHeader("Content-Type","application/json");
-     postRequest.setHeader("auth-token",respLogin.getKey());
+     setHeaders(postRequest);
      VolumeModel vol = new VolumeModel(volName,volSize,replica);
      String payload = gson.toJson(vol);
      setPayload(postRequest,payload);
      String response = execute(postRequest);
      GenericResponse resp = gson.fromJson(response, GenericResponse.class);
-
+     if(null == resp) return false;
      return resp.name.equals(volName) ? true : false;
  }
  public boolean createStorageInstance(String appName, String storageInstance, String networkPoolName)
  {
     HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances");
-    postRequest.setHeader("Content-Type","application/json");
-    postRequest.setHeader("auth-token",respLogin.getKey());
+    setHeaders(postRequest);
     networkPoolName = "/access_network_ip_pools/"+networkPoolName;
     StorageModelEx storage = new StorageModelEx(storageInstance,networkPoolName);
     String payload = gson.toJson(storage);
     setPayload(postRequest,payload);
     String response = execute(postRequest);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
-
+    if(null == resp) return false;
     return resp.name.equals(storageInstance) ? true : false;
  }
  public boolean createAppInstance(String appName)
  {
     HttpPost postRequest = new HttpPost("/v2/app_instances");
-    postRequest.setHeader("Content-Type","application/json");
-    postRequest.setHeader("auth-token",respLogin.getKey());
+    setHeaders(postRequest);
     AppModelEx app = new AppModelEx(appName);
     String payload = gson.toJson(app);
     setPayload(postRequest,payload);
     String response = execute(postRequest);
     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
-
+    if(null == resp) return false;
     return resp.name.equals(appName) ? true : false;
  }
  public boolean setAdminState(String appInstance,boolean online)
  {
-  boolean ret = false;
   AdminPrivilege prev = new AdminPrivilege( online ? "online" : "offline");
 
   HttpPut putRequest = new HttpPut("/v2/app_instances/"+appInstance);
-  putRequest.setHeader("Content-Type","application/json");
-  putRequest.setHeader("auth-token",respLogin.getKey());
+  setHeaders(putRequest);
   String payload = gson.toJson(prev);
 
    setPayload(putRequest, payload);
 
   String response = execute(putRequest);
   GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+  if(null == respObj) return false;
   return respObj.name.equals(appInstance) ? true : false;
  }
 private void setPayload(HttpPut request, String payload) {
@@ -530,8 +502,7 @@ private void setPayload(HttpPut request, String payload) {
  {
     String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s", appInstance,storageInstance,volumeInstance);
     HttpPut putRequest = new HttpPut(restPath);
-    putRequest.setHeader("Content-Type","application/json");
-    putRequest.setHeader("auth-token",respLogin.getKey());
+    setHeaders(putRequest);
 
     VolumeResize vol = new VolumeResize(newSize);
     String payload = gson.toJson(vol);
@@ -539,28 +510,29 @@ private void setPayload(HttpPut request, String payload) {
     setPayload(putRequest, payload);
      String response = execute(putRequest);
      GenericResponse resp = gson.fromJson(response,GenericResponse.class);
-
+     if(null == resp) return false;
      return resp.name.equals(volumeInstance) ? true : false;
  }
 
  public boolean deleteAppInstance(String appInstance)
  {
   HttpDelete deleteRequest = new HttpDelete("/v2/app_instances/"+appInstance);
-  deleteRequest.setHeader("auth-token",respLogin.getKey());
+  setHeaders(deleteRequest);
   String response = execute(deleteRequest);
 
   GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+  if(null == respObj) return false;
   return respObj.name.equals(appInstance) ? true : false;
  }
  public boolean deleteVolume(String appInstance, String storageInstance, String volumeInstance)
  {
-  boolean ret = false;
   String restPath = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s", appInstance,storageInstance,volumeInstance);
 
   HttpDelete deleteRequest = new HttpDelete(restPath);
-  deleteRequest.setHeader("auth-token",respLogin.getKey());
+  setHeaders(deleteRequest);
   String response = execute(deleteRequest);
   GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+  if(null == respObj) return false;
   return respObj.name.equals(volumeInstance) ? true : false;
 
  }
@@ -568,17 +540,12 @@ private void setPayload(HttpPut request, String payload) {
  {
   String restPath = String.format("/v2/app_instances/%s/storage_instances/%s", appInstance,storageInstance);
   HttpGet getRequest = new HttpGet(restPath);
-        getRequest.setHeader("auth-token",respLogin.getKey());
+  setHeaders(getRequest);
         String response = execute(getRequest);
 
         AppInstanceInfo.StorageInstance storageInfo = gson.fromJson(response, AppInstanceInfo.StorageInstance.class);
 
         return storageInfo;
- }
-
- public void getInitiatorGroup()
- {
-
  }
 
  public boolean createInitiatorGroup(String groupName, List<String> initiators)
@@ -588,8 +555,7 @@ private void setPayload(HttpPut request, String payload) {
    initiators = constructInitiatorList(initiators);
   }
   HttpPost postRequest = new HttpPost("/v2/initiator_groups");
-  postRequest.setHeader("Content-Type","application/json");
-  postRequest.setHeader("auth-token",respLogin.getKey());
+  setHeaders(postRequest);
 
   DateraModel.InitiatorGroup intrGroup = new DateraModel.InitiatorGroup(groupName,initiators);
   String payload = gson.toJson(intrGroup);
@@ -598,10 +564,10 @@ private void setPayload(HttpPut request, String payload) {
   String response = execute(postRequest);
 
   GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+  if(null == resp) return false;
   if(false == resp.name.equals(groupName))
   {
     DateraError err = gson.fromJson(response, DateraError.class);
-    //throw new RuntimeException(DATERA_LOG_PREFIX+"Error creating initiator group "+err.message);
     return false;
   }
   return true;
@@ -650,23 +616,10 @@ public List<String> registerInitiators(Map<String,String> initiators)
  }
  public List<String> getInitiators()
  {
-       List<String> initiators = new ArrayList<String>();
        HttpGet getRequest = new HttpGet("/v2/initiators");
        getRequest.setHeader("auth-token",respLogin.getKey());
        String response = execute(getRequest);
-
-       GsonBuilder gsonBuilder = new GsonBuilder();
-       Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
-       gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
-       Gson gson1 = gsonBuilder.create();
-
-       Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
-       for (Map.Entry<String, Object> entry : map.entrySet()) {
-           String volJson = entry.getValue().toString();
-           DateraModel.InitiatorModel initiator = gson1.fromJson(volJson, DateraModel.InitiatorModel.class);
-           initiators.add(initiator.id);
-       }
-       return initiators;
+       return extractKeys(response);
  }
  public AppInstanceInfo createVolume(String appInstanceName, List<String> initiators, List<String> initiatorGroups,int volumeGB, int volReplica, String accessControlMode, String networkPoolName)
  {
@@ -680,8 +633,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
      }
 
        HttpPost postRequest = new HttpPost("/v2/app_instances");
-       postRequest.setHeader("Content-type","application/json");
-       postRequest.setHeader("auth-token",respLogin.getKey());
+       setHeaders(postRequest);
 
        networkPoolName = "/access_network_ip_pools/"+networkPoolName;
        String payload = generateVolumePayload(appInstanceName,initiators,initiatorGroups,volumeGB,volReplica,accessControlMode,networkPoolName);
@@ -710,7 +662,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
 
   payload = gson.toJson(app);
 
-  System.out.println(payload);
+  //System.out.println(payload);
   return payload;
  }
  private void doLogin()
@@ -747,7 +699,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
   {
      throw new CloudRuntimeException("Could not login to datera node");
   }
-  //System.out.println("The session key :"+respLogin.getKey());
+  ////System.out.println("The session key :"+respLogin.getKey());
 
  }
  private String execute(HttpRequest request)
@@ -771,23 +723,23 @@ public List<String> registerInitiators(Map<String,String> initiators)
       HttpHost target = new HttpHost(managementIp, managementPort, "https");
 
       // specify the get request
-      System.out.println("executing request to " + target);
+      //System.out.println("executing request to " + target);
 
       HttpResponse httpResponse = httpclient.execute(target, request);
       HttpEntity entity = httpResponse.getEntity();
 
-      System.out.println("----------------------------------------");
-      System.out.println(httpResponse.getStatusLine());
+      //System.out.println("----------------------------------------");
+      //System.out.println(httpResponse.getStatusLine());
       Header[] headers = httpResponse.getAllHeaders();
       for (int i = 0; i < headers.length; i++) {
-        System.out.println(headers[i]);
+        //System.out.println(headers[i]);
       }
-      System.out.println("----------------------------------------");
+      //System.out.println("----------------------------------------");
 
       resp = EntityUtils.toString(entity);
 
       if (entity != null) {
-        System.out.println(resp);
+        //System.out.println(resp);
       }
 
     } catch (Exception e) {
