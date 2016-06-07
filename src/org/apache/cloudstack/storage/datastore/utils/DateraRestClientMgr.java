@@ -117,22 +117,26 @@ public class DateraRestClientMgr {
 
     public boolean updatePrimaryStorageCapacityBytes(DateraRestClient rest,DateraUtil.DateraMetaData dtMetaData, long capacityBytes)
     {
+        boolean ret = false;
         if(null == rest)
         {
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         int dtVolumeSize = getDateraCompatibleVolumeInGB(capacityBytes);
         rest.setAdminState(dtMetaData.appInstanceName, false);
-        rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, dtVolumeSize);
-        return  rest.setAdminState(dtMetaData.appInstanceName, true);
+        ret = rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, dtVolumeSize);
+        rest.setAdminState(dtMetaData.appInstanceName, true);
+        return ret;
     }
     public boolean updatePrimaryStorageIOPS(DateraRestClient rest,DateraUtil.DateraMetaData dtMetaData, long capacityIops)
     {
+        boolean ret = false;
         if(null == rest)
         {
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
-        return rest.setQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, capacityIops);
+        ret = rest.updateQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, capacityIops);
+        return ret;
     }
 
     public AppInstanceInfo.StorageInstance getStorageInfo(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData)
@@ -151,6 +155,22 @@ public class DateraRestClientMgr {
     {
         capacityBytes = DateraUtil.getVolumeSizeInBytes((long)DateraUtil.getVolumeSizeInGB(capacityBytes));
         return DateraUtil.getVolumeSizeInGB(capacityBytes);
+    }
+    public DateraModel.AppModel getAppInstanceInfo(DateraRestClient rest,DateraUtil.DateraMetaData dtMetaData)
+    {
+        if(null == rest)
+        {
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        return rest.getAppInstanceInfo(dtMetaData.appInstanceName);
+    }
+    public DateraModel.PerformancePolicy getQos(DateraRestClient rest,DateraUtil.DateraMetaData dtMetaData)
+    {
+        if(null == rest)
+        {
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        return rest.getQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName);
     }
 
 }

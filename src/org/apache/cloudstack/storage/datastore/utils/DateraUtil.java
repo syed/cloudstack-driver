@@ -92,6 +92,8 @@ public class DateraUtil {
     public static final String MAX_READ_BANDWIDTH = "maxReadBandwidth";
     public static final String MAX_WRITE_BANDWIDTH = "maxWriteBandwidth";
     public static final String TOTAL_IOPS = "totalIOPS";
+    public static final String ADMIN_STATE_ONLINE = "online";
+    public static final String ADMIN_STATE_OFFLINE = "offline";
 
 
     public static final long MAX_TOTAL_IOPS_PER_VOLUME = 100000;

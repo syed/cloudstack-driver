@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
+import org.apache.cloudstack.storage.datastore.utils.DateraModel;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClientMgr;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
@@ -128,6 +129,43 @@ public class DateraRestClientMgrTests {
         dtVolumeSize = DateraRestClientMgr.getInstance().getDateraCompatibleVolumeInGB(capacityBytes);
         assertNotEquals(dtVolumeSize, storageInfo.volumes.volume1.size);
         assertEquals(dtVolumeSize, updatedInfo.volumes.volume1.size);
+        DateraModel.AppModel appInfo = DateraRestClientMgr.getInstance().getAppInstanceInfo(rest, dtMetaData);
+        assertTrue(null != appInfo);
+        assertEquals(DateraUtil.ADMIN_STATE_ONLINE, appInfo.adminState);
+    }
+
+    @Test
+    public void utUpdateIOPS()
+    {
+        appInstanceName = DateraCommon.generateAppName();
+        rest =  new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
+        DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
+        DateraUtil.DateraMetaData dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummy", 3, DateraCommon.DEFAULT_NETWORK_POOL_NAME, appInstanceName, rest.defaultStorageName, "vgDummy");
+        AppInstanceInfo.StorageInstance storageInfo = DateraRestClientMgr.getInstance().getStorageInfo(rest,dtMetaData);
+
+        Map<String,String> initiators = new HashMap<String,String>();
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_1);
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_2);
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_3);
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
+        iqns = new ArrayList<String>(initiators.values());
+        initiatorGroupName = generateInitiatorGroup(rest, iqns);
+        DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, rest.defaultStorageName, initiatorGroupName, initiators, 1);
+
+        storageInfo = rest.getStorageInfo(appInstanceName,rest.defaultStorageName);
+        assertEquals(1,storageInfo.aclPolicy.initiatorGroups.size());
+        assertTrue(storageInfo.aclPolicy.initiatorGroups.get(0).contains(initiatorGroupName));
+
+        long capacityIOPS = 1001L;
+        DateraRestClientMgr.getInstance().updatePrimaryStorageIOPS(rest, dtMetaData, capacityIOPS);
+
+        DateraModel.PerformancePolicy perf = DateraRestClientMgr.getInstance().getQos(rest, dtMetaData);
+        assertTrue(null != perf);
+        assertEquals(capacityIOPS, perf.totalIopsMax);
+        DateraModel.AppModel appInfo = DateraRestClientMgr.getInstance().getAppInstanceInfo(rest, dtMetaData);
+        assertTrue(null != appInfo);
+        assertEquals(DateraUtil.ADMIN_STATE_ONLINE, appInfo.adminState);
     }
 
 }

@@ -42,7 +42,6 @@ import org.apache.log4j.Logger;
 import com.cloud.utils.exception.CloudRuntimeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 public class DateraRestClient {
@@ -72,183 +71,42 @@ public class DateraRestClient {
   doLogin();
  }
 
- private class LoginModel
+ public boolean updateQos(String appInstance, String storageInstance, String volumeName, long totalIOPS)
  {
-  public String name;
-  public String password;
+     String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
+        HttpPut putRequest = new HttpPut(url);
+        setHeaders(putRequest);
+
+        DateraModel.PerformancePolicy policy = new DateraModel.PerformancePolicy(totalIOPS);
+        String payload = gson.toJson(policy);
+        setPayload(putRequest, payload);
+        String response = execute(putRequest);
+        DateraModel.PerformancePolicy resp = gson.fromJson(response, DateraModel.PerformancePolicy.class);
+
+        if(null == resp) return false;
+        return resp.totalIopsMax == totalIOPS ? true : false;
  }
 
- public class ACLPolicyModel
+ public DateraModel.AppModel getAppInstanceInfo(String appInstance)
  {
-  public List<String> initiators; // e.g. "/initiators/iqn.1993-08.org.debian:01:6e3ca7bd74e1"
-  @SerializedName("initiator_groups")
-  public List<String> initiatorGroups; // e.g. "/initiator_groups/cluster2_initiator_group"
-
-  public ACLPolicyModel(List<String> paramInitiators, List<String> paramInitiatorGroups)
-  {
-   initiators = paramInitiators;
-   initiatorGroups = paramInitiatorGroups;
-  }
- }
- public class AppModel
- {
-  public String name;
-  @SerializedName("access_control_mode")
-  public String accessControlMode;
-  @SerializedName("storage_instances")
-  public StorageInstanceModel storageInstances;
-
-  public AppModel(String appInstanceName, String accessControlMode, StorageInstanceModel inst)
-  {
-   this.name = appInstanceName;
-   this.accessControlMode = accessControlMode;
-   this.storageInstances = inst;
-  }
+        HttpGet getRequest = new HttpGet("/v2/app_instances/"+appInstance);
+        setHeaders(getRequest);
+        String response = execute(getRequest);
+        DateraModel.AppModel resp = gson.fromJson(response, DateraModel.AppModel.class);
+        return resp;
  }
 
- public class StorageInstanceModel
+
+ public DateraModel.PerformancePolicy getQos(String appInstance, String storageInstance, String volumeName)
  {
-  @SerializedName(defaultStorageName)
-  public StorageModel storage1;
+    String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
+    HttpGet getRequest = new HttpGet(url);
+    setHeaders(getRequest);
 
-  public StorageInstanceModel(StorageModel st)
-  {
-   storage1 = st;
-  }
- }
+    String response = execute(getRequest);
+    DateraModel.PerformancePolicy resp = gson.fromJson(response, DateraModel.PerformancePolicy.class);
 
- public class StorageModel
- {
-  public String name = defaultStorageName;
-  public VolumeInstanceModel volumes;
-  @SerializedName("acl_policy")
-  public ACLPolicyModel aclPolicy;
-  @SerializedName("ip_pool")
-  public String ipPool;
-  public StorageModel(String networkPoolName, VolumeInstanceModel vols, ACLPolicyModel policy)
-  {
-   volumes = vols;
-   aclPolicy = policy;
-   ipPool = networkPoolName;
-  }
- }
-
- public class VolumeInstanceModel
- {
-  @SerializedName(defaultVolumeName)
-  public VolumeModel volume1;
-
-  public VolumeInstanceModel(VolumeModel vol)
-  {
-   volume1 = vol;
-  }
- }
- public class VolumeModel {
-
-  public String name = defaultVolumeName;
-  public int size;
-  @SerializedName("replica_count")
-  public int replicaCount;
-  //snapshot policies
-  @SerializedName("performance_policy")
-  DateraModel.PerformancePolicy performancePolicy;
-
-  public VolumeModel(String volName,int volSize, int volReplicaSize)
-  {
-   this.name =  volName;
-   this.size = volSize;
-   this.replicaCount = volReplicaSize;
-  }
-
-  public VolumeModel(String volName,int volSize, int volReplicaSize, DateraModel.PerformancePolicy performancePolicy)
-  {
-   this.name =  volName;
-   this.size = volSize;
-   this.replicaCount = volReplicaSize;
-   this.performancePolicy = performancePolicy;
-  }
- }
-
- public class StorageResponse
- {
-  public class AccessControl
-  {
-   public List<String> ips;
-   public String iqn;
-  }
-
-  public AccessControl access;
-
- }
- public class AdminPrivilege
- {
-   @SerializedName("admin_state")
-   public String adminState;
-
-   public AdminPrivilege(String paramAdminState)
-   {
-    adminState = paramAdminState;
-   }
- }
-
- public class GenericResponse
- {
-  public String name;
-  public String id;
- }
-
- public class VolumeResize
- {
-     public int size;
-     public VolumeResize(int sz)
-     {
-       size = sz;
-     }
- }
-
- public class AppModelEx
- {
-     public String name;
-
-     public AppModelEx(String appName)
-     {
-       name = appName;
-     }
- }
-
- public class StorageModelEx
- {
-     public String name;
-     @SerializedName("ip_pool")
-     public String ipPool;
-
-     public StorageModelEx(String storageName, String ipPool)
-     {
-       name = storageName;
-       this.ipPool = ipPool;
-     }
- }
- public class InitiatorModel
- {
-    public String id;
-    public String name;
-   public InitiatorModel(String label, String iqn)
-   {
-     name = label;
-     id = iqn;
-   }
- }
- public class DateraError
- {
-    public String name;
-    public int code;
-    public int http;
-    public String message;
-    @SerializedName("api_req_id")
-    public int apiReqId;
-    @SerializedName("storage_node_uuid")
-    public String storageNodeUuid;
-    public String ts;
+    return resp;
  }
  private void setHeaders(HttpRequestBase request)
  {
@@ -392,7 +250,7 @@ public class DateraRestClient {
       setPayload(putRequest, payload);
 
       String response = execute(putRequest);
-      GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+      DateraModel.GenericResponse respObj = gson.fromJson(response, DateraModel.GenericResponse.class);
       if(null == respObj) return false;
       return respObj.name.equals(storageInstance) ? true : false;
 
@@ -403,7 +261,7 @@ public class DateraRestClient {
     setHeaders(deleteRequest);
     String response = execute(deleteRequest);
     s_logger.info("DateraRestClient.unregisterInitiator response ="+response);
-    GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+    DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
     if(null == resp) return false;
     return resp.id.equals(iqn) ? true : false;
  }
@@ -412,16 +270,16 @@ public class DateraRestClient {
     HttpPost postRequest = new HttpPost("/v2/initiators");
     setHeaders(postRequest);
 
-    InitiatorModel initiator = new InitiatorModel(labelName, iqn);
+    DateraModel.InitiatorModel initiator = new DateraModel.InitiatorModel(labelName, iqn);
     String payload = gson.toJson(initiator);
     setPayload(postRequest, payload);
     String response = execute(postRequest);
     s_logger.info("DateraRestClient.registerInitiator response ="+response);
-    GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+    DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
     if(null == resp) return false;
     if(resp.name.equals(CONFLICT_ERROR))
     {
-        DateraError error = gson.fromJson(response, DateraError.class);
+        DateraModel.DateraError error = gson.fromJson(response, DateraModel.DateraError.class);
         //the iqn already exists, no need to panic
         return true;
     }
@@ -432,7 +290,7 @@ public class DateraRestClient {
       HttpGet getRequest = new HttpGet("/v2/app_instances/"+appName);
       setHeaders(getRequest);
       String response = execute(getRequest);
-      GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+      DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
       if(null == resp) return false;
       return resp.name.equals(appName) ? true : false;
    }
@@ -441,11 +299,11 @@ public class DateraRestClient {
  {
      HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances/"+storageInstance+"/volumes");
      setHeaders(postRequest);
-     VolumeModel vol = new VolumeModel(volName,volSize,replica);
+     DateraModel.VolumeModel vol = new DateraModel.VolumeModel(volName,volSize,replica);
      String payload = gson.toJson(vol);
      setPayload(postRequest,payload);
      String response = execute(postRequest);
-     GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+     DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
      if(null == resp) return false;
      return resp.name.equals(volName) ? true : false;
  }
@@ -454,11 +312,11 @@ public class DateraRestClient {
     HttpPost postRequest = new HttpPost("/v2/app_instances/"+appName+"/storage_instances");
     setHeaders(postRequest);
     networkPoolName = "/access_network_ip_pools/"+networkPoolName;
-    StorageModelEx storage = new StorageModelEx(storageInstance,networkPoolName);
+    DateraModel.StorageModelEx storage = new DateraModel.StorageModelEx(storageInstance,networkPoolName);
     String payload = gson.toJson(storage);
     setPayload(postRequest,payload);
     String response = execute(postRequest);
-    GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+    DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
     if(null == resp) return false;
     return resp.name.equals(storageInstance) ? true : false;
  }
@@ -466,17 +324,17 @@ public class DateraRestClient {
  {
     HttpPost postRequest = new HttpPost("/v2/app_instances");
     setHeaders(postRequest);
-    AppModelEx app = new AppModelEx(appName);
+    DateraModel.AppModelEx app = new DateraModel.AppModelEx(appName);
     String payload = gson.toJson(app);
     setPayload(postRequest,payload);
     String response = execute(postRequest);
-    GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+    DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
     if(null == resp) return false;
     return resp.name.equals(appName) ? true : false;
  }
  public boolean setAdminState(String appInstance,boolean online)
  {
-  AdminPrivilege prev = new AdminPrivilege( online ? "online" : "offline");
+  DateraModel.AdminPrivilege prev = new DateraModel.AdminPrivilege( online ? "online" : "offline");
 
   HttpPut putRequest = new HttpPut("/v2/app_instances/"+appInstance);
   setHeaders(putRequest);
@@ -485,7 +343,7 @@ public class DateraRestClient {
    setPayload(putRequest, payload);
 
   String response = execute(putRequest);
-  GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+  DateraModel.GenericResponse respObj = gson.fromJson(response, DateraModel.GenericResponse.class);
   if(null == respObj) return false;
   return respObj.name.equals(appInstance) ? true : false;
  }
@@ -504,12 +362,12 @@ private void setPayload(HttpPut request, String payload) {
     HttpPut putRequest = new HttpPut(restPath);
     setHeaders(putRequest);
 
-    VolumeResize vol = new VolumeResize(newSize);
+    DateraModel.VolumeResize vol = new DateraModel.VolumeResize(newSize);
     String payload = gson.toJson(vol);
 
     setPayload(putRequest, payload);
      String response = execute(putRequest);
-     GenericResponse resp = gson.fromJson(response,GenericResponse.class);
+     DateraModel.GenericResponse resp = gson.fromJson(response,DateraModel.GenericResponse.class);
      if(null == resp) return false;
      return resp.name.equals(volumeInstance) ? true : false;
  }
@@ -520,7 +378,7 @@ private void setPayload(HttpPut request, String payload) {
   setHeaders(deleteRequest);
   String response = execute(deleteRequest);
 
-  GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+  DateraModel.GenericResponse respObj = gson.fromJson(response, DateraModel.GenericResponse.class);
   if(null == respObj) return false;
   return respObj.name.equals(appInstance) ? true : false;
  }
@@ -531,7 +389,7 @@ private void setPayload(HttpPut request, String payload) {
   HttpDelete deleteRequest = new HttpDelete(restPath);
   setHeaders(deleteRequest);
   String response = execute(deleteRequest);
-  GenericResponse respObj = gson.fromJson(response, GenericResponse.class);
+  DateraModel.GenericResponse respObj = gson.fromJson(response, DateraModel.GenericResponse.class);
   if(null == respObj) return false;
   return respObj.name.equals(volumeInstance) ? true : false;
 
@@ -563,11 +421,11 @@ private void setPayload(HttpPut request, String payload) {
   setPayload(postRequest, payload);
   String response = execute(postRequest);
 
-  GenericResponse resp = gson.fromJson(response, GenericResponse.class);
+  DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
   if(null == resp) return false;
   if(false == resp.name.equals(groupName))
   {
-    DateraError err = gson.fromJson(response, DateraError.class);
+    DateraModel.DateraError err = gson.fromJson(response, DateraModel.DateraError.class);
     return false;
   }
   return true;
@@ -651,14 +509,14 @@ public List<String> registerInitiators(Map<String,String> initiators)
 
  public String generateVolumePayload(String appInstanceName,
    List<String> initiators, List<String> initiatorGroups, int volumeGB, int volReplica, String accessControlMode, String networkPoolName) {
-  // TODO Auto-generated method stub
+
   String payload = "";
 
-  AppModel app = new AppModel(appInstanceName,accessControlMode,
-    new StorageInstanceModel(
-      new StorageModel(networkPoolName,
-        new VolumeInstanceModel(
-          new VolumeModel(defaultVolumeName, volumeGB, volReplica)),new ACLPolicyModel(initiators,initiatorGroups))));
+  DateraModel.AppModel app = new DateraModel.AppModel(appInstanceName,accessControlMode,
+    new DateraModel.StorageInstanceModel(
+      new DateraModel.StorageModel(networkPoolName,
+        new DateraModel.VolumeInstanceModel(
+          new DateraModel.VolumeModel(defaultVolumeName, volumeGB, volReplica)),new DateraModel.ACLPolicyModel(initiators,initiatorGroups))));
 
   payload = gson.toJson(app);
 
@@ -669,7 +527,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
  {
      HttpPut postRequest = new HttpPut("/v2/login");
      postRequest.setHeader("Content-Type","application/json");
-     LoginModel loginInfo = new LoginModel();
+     DateraModel.LoginModel loginInfo = new DateraModel.LoginModel();
      loginInfo.name = userName;
      loginInfo.password = password;
 
@@ -677,7 +535,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
    StringEntity params = new StringEntity(gson.toJson(loginInfo));
         postRequest.setEntity(params);
   } catch (UnsupportedEncodingException e) {
-   // TODO Auto-generated catch block
+
    e.printStackTrace();
   }
 
@@ -687,7 +545,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
   {
      throw new RuntimeException(DATERA_LOG_PREFIX+"No response from the datera node");
   }
-  DateraError error = gson.fromJson(resp, DateraError.class);
+  DateraModel.DateraError error = gson.fromJson(resp, DateraModel.DateraError.class);
   if(null != error.name && error.name.equals(AUTH_FAILED_ERROR))
   {
     throw new RuntimeException(DATERA_LOG_PREFIX+"Authentication failure, "+error.message);

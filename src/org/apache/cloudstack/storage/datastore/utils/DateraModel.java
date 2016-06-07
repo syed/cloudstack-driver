@@ -8,7 +8,7 @@ public class DateraModel {
 
     public static final String defaultStorage="storage-1";
     public static final String defaultVolume="volume-1";
-    private class LoginModel
+    public static class LoginModel
      {
       public String name;
       public String password;
@@ -33,16 +33,18 @@ public class DateraModel {
       public String accessControlMode;
       @SerializedName("storage_instances")
       public StorageInstanceModel storageInstances;
+      @SerializedName("admin_state")
+      public String adminState;
 
       public AppModel(String appInstanceName, String accessControlMode, StorageInstanceModel inst)
       {
-       name = appInstanceName;
-       accessControlMode = accessControlMode;
-       storageInstances = inst;
+       this.name = appInstanceName;
+       this.accessControlMode = accessControlMode;
+       this.storageInstances = inst;
       }
      }
 
-     public class StorageInstanceModel
+     public static class StorageInstanceModel
      {
       @SerializedName(defaultStorage)
       public StorageModel storage1;
@@ -106,12 +108,12 @@ public class DateraModel {
       public AccessControl access;
 
      }
-     public static class AdminPreviledge
+     public static class AdminPrivilege
      {
        @SerializedName("admin_state")
        public String adminState;
 
-       public AdminPreviledge(String paramAdminState)
+       public AdminPrivilege(String paramAdminState)
        {
         adminState = paramAdminState;
        }
@@ -191,18 +193,18 @@ public class DateraModel {
     public static class PerformancePolicy
     {
        @SerializedName("read_iops_max")
-       long readIopsMax;
+       public long readIopsMax;
        @SerializedName("write_iops_max")
-       long writeIopsMax;
+       public long writeIopsMax;
        @SerializedName("total_iops_max")
-       long totalIopsMax;
+       public long totalIopsMax;
 
        @SerializedName("read_bandwidth_max")
-       long readBandwidthMax;
+       public long readBandwidthMax;
        @SerializedName("write_bandwidth_max")
-       long writeBandwidthMax;
+       public long writeBandwidthMax;
        @SerializedName("total_bandwidth_max")
-       long totalBandwidthMax;
+       public long totalBandwidthMax;
 
        public PerformancePolicy(long totalIOPS)
        {
