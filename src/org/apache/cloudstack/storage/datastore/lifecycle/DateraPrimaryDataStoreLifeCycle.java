@@ -36,7 +36,6 @@ import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
-import org.apache.cloudstack.storage.datastore.utils.DateraRestClient.StorageResponse;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.apache.cloudstack.storage.volume.datastore.PrimaryDataStoreHelper;
 
@@ -212,7 +211,6 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 
     private AppInstanceInfo.StorageInstance createDateraVolume(String storageVip, int storagePort, String clusterAdminUsername,
         String clusterAdminPassword, String appName) {
-        StorageResponse resp = null;
 
         DateraRestClient rest = new DateraRestClient(storageVip, storagePort, clusterAdminUsername, clusterAdminPassword);
 /*
