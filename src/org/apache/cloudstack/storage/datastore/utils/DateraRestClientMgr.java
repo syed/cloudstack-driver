@@ -172,5 +172,34 @@ public class DateraRestClientMgr {
         }
         return rest.getQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName);
     }
-
+    public String suggestAppInstanceName(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData, String suggestedAppName)
+    {
+       String appName = "";
+       if(null != suggestedAppName)
+       {
+           appName = suggestedAppName;
+       }
+       else
+       {
+           appName = "csApp";
+       }
+       if(null == rest)
+       {
+           rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+       }
+       List<String> appNames = rest.enumerateAppInstances();
+       int counter = 1;
+       for(;;)
+       {
+           if(false == appNames.contains(appName))
+           {
+               break;
+           }
+           else
+           {
+               appName+=counter++;
+           }
+       }
+       return appName;
+    }
 }

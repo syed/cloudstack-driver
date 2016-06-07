@@ -193,11 +193,13 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         int storagePort = DateraUtil.DEFAULT_STORAGE_PORT;
         String storagePath = "";
         DateraRestClient rest= new DateraRestClient(managementVip, managementPort, managementUsername, managementPassword);
+        DateraUtil.DateraMetaData dtMetaData = new DateraUtil.DateraMetaData(managementVip, managementPort, managementUsername, managementPassword, storagePoolName, replica, networkPoolName, appInstanceName, storageInstanceName, clvmVolumeGroupName);
 
         if(isDateraSupported(hypervisorType))
         {
             appInstanceName = storagePoolName;
             appInstanceName.replace(" ", "");
+            appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, appInstanceName);
             validateHostsAvailability(clusterId);
             AppInstanceInfo.StorageInstance dtStorageInfo = DateraRestClientMgr.getInstance().createVolume(rest, managementVip, managementPort, managementUsername, managementPassword, appInstanceName, networkPoolName, capacityBytes, replica, capacityIops);
 
