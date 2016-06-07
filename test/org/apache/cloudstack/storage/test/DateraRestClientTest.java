@@ -33,7 +33,6 @@ import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
 import org.apache.cloudstack.storage.datastore.utils.DateraModel;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
-import org.apache.cloudstack.storage.datastore.utils.DateraRestClient.StorageResponse;
 import org.apache.http.client.methods.HttpPost;
 
 import org.junit.After;
@@ -173,8 +172,13 @@ public class DateraRestClientTest {
     
     @Test
     public void testEnumerateAppInstance() {
+    	String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst-", UUID.randomUUID().toString());
     	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
+    	assertTrue(client.createAppInstance(appInstanceName));
     	List <String> resp = client.enumerateAppInstances();
+    	assertTrue(resp.contains(appInstanceName));
+    	assertTrue(client.setAdminState(appInstanceName, false));
+    	assertTrue(client.deleteAppInstance(appInstanceName));
     }
     
     @Test

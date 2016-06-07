@@ -20,12 +20,15 @@ package org.apache.cloudstack.storage.test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
@@ -46,11 +49,16 @@ public class DateraRestMgrMockTest {
 	
     private DateraRestClient rest = null;
     private DateraRestClientMgr restMgr = null;
+    private DateraUtil.DateraMetaData dtMetaData = null;
+    private String appName = "test_global_app_inst_1";
     
     @Before
     public void init() {
     	rest  = mock(DateraRestClient.class);
     	restMgr = DateraRestClientMgr.getInstance();
+    	dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
+    			DateraCommon.PASSWORD, null, DateraCommon.DEFAULT_REPLICA, 
+    			DateraCommon.DEFAULT_NETWORK_POOL_NAME, appName, rest.defaultStorageName, null);
     }
     
     @Test
@@ -80,6 +88,73 @@ public class DateraRestMgrMockTest {
     	restMgr.createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
     			DateraCommon.PASSWORD, appName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES, 
     			DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
-    	
     }
+    
+    @Test
+    public void testRegisterInitiators() {
+    	
+    	final String appName = "test_app_inst_2";
+    	
+    	Map<String, String> initiators = new HashMap<String, String>();
+    	initiators.put("host1", DateraCommon.INITIATOR_1);
+
+    	List<String> regInitList = new ArrayList<String>(initiators.values());
+
+    	when(rest.registerInitiators(initiators)).thenReturn(regInitList);
+    	when(rest.createInitiatorGroup("test_init_grp_1", regInitList)).thenReturn(true);
+    	List<String> initGroups = new ArrayList <String>();
+    	initGroups.add("test_init_grp_1");
+    	when(rest.updateStorageWithInitiator(appName, rest.defaultStorageName, null, initGroups)).thenReturn(true);
+
+    	restMgr.registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
+    			DateraCommon.PASSWORD, appName, rest.defaultStorageName, "test_init_grp_1", initiators, 10L);
+    }
+    
+    @Test
+    public void testUpdatePrimaryStorageCapacityBytes() {
+    	
+    	int dtVolumeSize = restMgr.getDateraCompatibleVolumeInGB(DateraCommon.DEFAULT_CAPACITY_BYTES);
+    	when(rest.setAdminState(dtMetaData.appInstanceName, false)).thenReturn(true);
+        when(rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, dtVolumeSize)).thenReturn(true);
+        when(rest.setAdminState(dtMetaData.appInstanceName, true)).thenReturn(true);
+        assertTrue(restMgr.updatePrimaryStorageCapacityBytes(rest, dtMetaData, DateraCommon.DEFAULT_CAPACITY_BYTES));
+    }
+    
+    @Test
+    public void testUpdatePrimaryStorageIOPS() {
+    	
+    	when(rest.updateQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName,
+    			rest.defaultVolumeName, DateraCommon.DEFAULT_CAPACITY_IOPS)).thenReturn(true);
+    	assertTrue(restMgr.updatePrimaryStorageIOPS(rest, dtMetaData, DateraCommon.DEFAULT_CAPACITY_IOPS));
+    }
+    
+    @Test
+    public void testGetStorageInfo() {
+    	when(rest.getStorageInfo(dtMetaData.appInstanceName, dtMetaData.storageInstanceName)).thenReturn(new AppInstanceInfo().new StorageInstance());
+    	assertTrue(restMgr.getStorageInfo(rest, dtMetaData) instanceof AppInstanceInfo.StorageInstance);
+    }
+    
+    @Test
+    public void testGetDateraCompatibleVolumeInGB() {
+    	assertEquals(restMgr.getDateraCompatibleVolumeInGB(10000000000L), 9);
+    }
+    
+    @Test
+    public void testGetCloudstackCompatibleVolumeSize() {
+    	assertEquals(restMgr.getCloudstackCompatibleVolumeSize(5), 5368709120L);
+    }
+    
+    @Test
+    public void testdDeleteInitiatorGroup() {
+    	when(rest.deleteInitiatorGroup(dtMetaData.volumeGroupName)).thenReturn(true);
+    	assertTrue(restMgr.deleteInitiatorGroup(rest, dtMetaData));
+    }
+    
+    @Test
+    public void testDeleteAppInstance() {
+    	when(rest.setAdminState(dtMetaData.appInstanceName, false)).thenReturn(true);
+        when(rest.deleteAppInstance(dtMetaData.appInstanceName)).thenReturn(true);
+        assertTrue(restMgr.deleteAppInstance(rest, dtMetaData));
+    }
+
 }

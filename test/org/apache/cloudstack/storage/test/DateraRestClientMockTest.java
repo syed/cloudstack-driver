@@ -21,13 +21,15 @@ package org.apache.cloudstack.storage.test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
+
 
 import org.junit.Before;
 import org.junit.Test;
@@ -121,5 +123,86 @@ public class DateraRestClientMockTest {
     	//Making App instance offline
     	assertTrue(client.setAdminState(appInstanceName, false));
     	assertTrue(client.deleteVolume(appInstanceName, storageInst, volumeName));
+    }
+    
+    @Test
+    public void testCreateStorageInstance() {
+    	final String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst", UUID.randomUUID().toString());
+    	final String storageInst = "storage-1";
+    	
+    	when(client.createStorageInstance(appInstanceName, storageInst, "default")).thenReturn(true);
+    	assertTrue(client.createStorageInstance(appInstanceName, storageInst, "default"));
+    	
+    	// App instance creation with same name not allowed
+    	when(client.createStorageInstance(appInstanceName, storageInst, "default")).thenReturn(false);
+    	assertFalse(client.createStorageInstance(appInstanceName, storageInst, "default"));
+    }
+    
+    @Test
+    public void testCreateInitiatorGroup() {
+    	
+    	List<String> initiators  = new ArrayList<String> ();
+    	initiators.add(DateraCommon.INITIATOR_1);
+    	initiators.add(DateraCommon.INITIATOR_2);
+    	when(client.createInitiatorGroup("init_grp_1", initiators)).thenReturn(true);
+    	assertTrue(client.createInitiatorGroup("init_grp_1", initiators));
+    }
+    
+    @Test
+    public void testResizeVolume() {
+    	final String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst", UUID.randomUUID().toString());
+    	final String storageInst = "storage-1";
+    	final String volumeName = "volume-1";
+    	
+    	when(client.createAppInstance(appInstanceName)).thenReturn(true);
+    	when(client.createStorageInstance(appInstanceName, storageInst, "default")).thenReturn(true);
+    	when(client.createVolume(appInstanceName, storageInst, volumeName, 2, 2)).thenReturn(true);
+    	
+    	assertTrue(client.createAppInstance(appInstanceName));
+    	assertTrue(client.createStorageInstance(appInstanceName, storageInst, "default"));
+    	assertTrue(client.createVolume(appInstanceName, storageInst, volumeName, 2, 2));
+
+    	when(client.resizeVolume(appInstanceName, storageInst, volumeName, 4)).thenReturn(false);
+    	// App instance is online so volume resize is not allowed
+    	assertFalse(client.resizeVolume(appInstanceName, storageInst, volumeName, 4));
+    	
+    	when(client.setAdminState(appInstanceName, false)).thenReturn(true);
+    	when(client.resizeVolume(appInstanceName, storageInst, volumeName, 4)).thenReturn(true);
+    	assertTrue(client.resizeVolume(appInstanceName, storageInst, volumeName, 4));
+    }
+    
+    @Test
+    public void testIsAppInstanceExists() {
+    	
+    	final String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst", UUID.randomUUID().toString());
+    	when(client.createAppInstance(appInstanceName)).thenReturn(true);
+    	assertTrue(client.createAppInstance(appInstanceName));
+    	
+    	List<String> appList = new ArrayList<String> ();
+    	appList.add(appInstanceName);
+    	when(client.enumerateAppInstances()).thenReturn(appList);
+    	assertTrue(client.enumerateAppInstances().contains(appInstanceName));
+    }
+    
+    @Test
+    public void testSetQos() {
+    	
+    	final String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst", UUID.randomUUID().toString());
+    	final String storageInst = "storage-1";
+    	final String volumeName = "volume-1";
+
+    	when(client.createAppInstance(appInstanceName)).thenReturn(true);
+    	when(client.createStorageInstance(appInstanceName, storageInst, "default")).thenReturn(true);
+    	when(client.createVolume(appInstanceName, storageInst, volumeName, 1, 2)).thenReturn(true);
+    	when(client.setQos(appInstanceName, storageInst, volumeName, 1100000L)).thenReturn(true);
+	
+    	assertTrue(client.createAppInstance(appInstanceName));
+    	assertTrue(client.createStorageInstance(appInstanceName, storageInst, "default"));
+    	assertTrue(client.createVolume(appInstanceName, storageInst, volumeName, 1, 2));
+    	assertTrue(client.setQos(appInstanceName, storageInst, volumeName, 1100000L));
+    	
+    	when(client.setQos(appInstanceName, storageInst, volumeName, 110000000000L)).thenReturn(false);
+    	// Invalid total IOPS
+    	assertFalse(client.setQos(appInstanceName, storageInst, volumeName, 110000000000L));
     }
 }
