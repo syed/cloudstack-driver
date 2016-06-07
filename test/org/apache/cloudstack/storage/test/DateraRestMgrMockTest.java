@@ -57,9 +57,9 @@ public class DateraRestMgrMockTest {
     public void testCreateVolume() {
     	final String appName = "test_app_inst_1";
     	when(rest.isAppInstanceExists(appName)).thenReturn(false);
-    	List<String> n_pool = new ArrayList();
-    	n_pool.add("default");
-    	when(rest.enumerateNetworkPool()).thenReturn(n_pool);
+    	List<String> netPool = new ArrayList();
+    	netPool.add("default");
+    	when(rest.enumerateNetworkPool()).thenReturn(netPool);
 
     	int dtVolSize = DateraUtil.getVolumeSizeInGB(DateraCommon.DEFAULT_CAPACITY_BYTES);
         when(rest.createVolume(appName, null, null, dtVolSize, DateraCommon.DEFAULT_REPLICA, 
