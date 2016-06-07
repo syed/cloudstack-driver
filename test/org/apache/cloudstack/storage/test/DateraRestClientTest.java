@@ -126,6 +126,8 @@ public class DateraRestClientTest {
     	String appInst2 = DateraUtil.generateAppInstanceName("test-appInst-", UUID.randomUUID().toString());
     	rest.createAppInstance(appInst2);
     	assertTrue(rest.isAppInstanceExists(appInst2));
+    	assertTrue(rest.setAdminState(appInst2, false));
+    	assertTrue(rest.deleteAppInstance(appInst2));
     }
  
     @Test
