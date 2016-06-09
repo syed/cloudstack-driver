@@ -202,8 +202,17 @@ public class DateraRestClientMgr {
        }
        return appName;
     }
-    public String generateInitiatorGroupName(DateraRestClient rest,
+    public String generateInitiatorGroupName(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData,
             List<String> iqns, String preferredPrefix) {
+
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                throw new CloudRuntimeException("Cannot generate initiator group name");
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
         String initiatorGroupName = "";
         if(null == preferredPrefix || preferredPrefix.isEmpty())
         {

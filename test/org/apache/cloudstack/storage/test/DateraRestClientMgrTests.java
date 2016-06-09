@@ -46,7 +46,7 @@ public class DateraRestClientMgrTests {
     {
         rest =  new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
         appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
-        String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, iqns,appInstanceName);
+        String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
         dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummy", 3, DateraCommon.DEFAULT_NETWORK_POOL_NAME, appInstanceName, rest.defaultStorageName, initiatorGroupName,"vgDummy");
         DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
         AppInstanceInfo.StorageInstance storageInfo = DateraRestClientMgr.getInstance().getStorageInfo(rest,dtMetaData);
@@ -82,7 +82,7 @@ public class DateraRestClientMgrTests {
     {
         rest =  new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
         appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
-        String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, iqns,appInstanceName);
+        String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
         dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummy", 3, DateraCommon.DEFAULT_NETWORK_POOL_NAME, appInstanceName, rest.defaultStorageName, initiatorGroupName,"vgDummy");
         DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
         DateraUtil.DateraMetaData dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummy", 3, DateraCommon.DEFAULT_NETWORK_POOL_NAME, appInstanceName, rest.defaultStorageName, "dummyInitiatorGroupName","vgDummy");
@@ -122,7 +122,7 @@ public class DateraRestClientMgrTests {
     {
         rest =  new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
         appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
-        String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, iqns,appInstanceName);
+        String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
         dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummy", 3, DateraCommon.DEFAULT_NETWORK_POOL_NAME, appInstanceName, rest.defaultStorageName, initiatorGroupName,"vgDummy");
         DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
         DateraUtil.DateraMetaData dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummy", 3, DateraCommon.DEFAULT_NETWORK_POOL_NAME, appInstanceName, rest.defaultStorageName, "dummyInitiatorGroup","vgDummy");
@@ -135,7 +135,6 @@ public class DateraRestClientMgrTests {
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
         iqns = new ArrayList<String>(initiators.values());
-        initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, iqns,appInstanceName);
         DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, rest.defaultStorageName, initiatorGroupName, initiators, 1);
 
         storageInfo = DateraRestClientMgr.getInstance().getStorageInfo(rest, dtMetaData);
