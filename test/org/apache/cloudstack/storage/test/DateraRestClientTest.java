@@ -18,11 +18,14 @@
  */
 package org.apache.cloudstack.storage.test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.cloudstack.engine.subsystem.api.storage.CreateCmdResult;
@@ -195,7 +198,7 @@ public class DateraRestClientTest {
     }
     
     @Test
-    public void testGetVolumes() {
+    public void testGetVolume() {
     	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
     	assertTrue(client.createVolume(APPINSTNAME, client.defaultStorageName, "vol-4", 1, 2));
     	AppInstanceInfo.VolumeInfo resp = client.getVolumeInfo(APPINSTNAME, client.defaultStorageName, "vol-4");
@@ -283,5 +286,103 @@ public class DateraRestClientTest {
     	// Invalid total IOPS
     	assertFalse(client.setQos(APPINSTNAME, "storage-3", "volume-8", 10000000000L));
     }
+    
+    @Test
+    public void testGetVolumes() {
+    	
+    	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
+    	assertTrue(client.createStorageInstance(APPINSTNAME, "storage-3", "default"));
+    	assertTrue(client.createVolume(APPINSTNAME, "storage-3", "volume-8", 1, 2));
+    	List<AppInstanceInfo.VolumeInfo> volumes = client.getVolumes(APPINSTNAME, "storage-3");
+    	boolean found = false;
+    	for (AppInstanceInfo.VolumeInfo volume : volumes) {
+    		if (volume.name.equals("volume-8"))
+    			found = true;
+    	}
+    	assertTrue(found);
+    }
+    
+    @Test
+    public void testCreateVolume2() {
+    	String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst-", UUID.randomUUID().toString());
+    	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
+    	AppInstanceInfo appInfo = client.createVolume(appInstanceName, null, null, 8, 2, "allow_all", "default");
+    	assertEquals(appInfo.storageInstances.storage1.volumes.volume1.size, 8);
+    	assertTrue(client.setAdminState(appInstanceName, false));
+    	assertTrue(client.deleteAppInstance(appInstanceName));
+    }
+    
+    @Test
+    public void testregisterInitiatorsWithLabel() {
+    	
+    	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
+    	Map <String, String> initiators = new HashMap<String, String> ();
+    	initiators.put("host1", DateraCommon.INITIATOR_1);
+    	List<String> inits = client.registerInitiators(initiators);
+    	assertTrue(inits.contains(DateraCommon.INITIATOR_1));
+    	assertTrue(client.unregisterInitiator(DateraCommon.INITIATOR_1));
+    }
+    
+    @Test
+    public void testGenerateNextVolumeName() {
+    	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
+    	String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst-", UUID.randomUUID().toString());
+    	assertTrue(client.createAppInstance(appInstanceName));
+    	assertTrue(client.createStorageInstance(appInstanceName, client.defaultStorageName, "default"));
+    	assertTrue(client.createVolume(appInstanceName, client.defaultStorageName, client.defaultVolumeName, 1, 2));
+    	AppInstanceInfo.VolumeInfo volume1 = client.getVolumeInfo(appInstanceName, client.defaultStorageName, client.defaultVolumeName);
+    	List<AppInstanceInfo.VolumeInfo> volumes = new ArrayList<AppInstanceInfo.VolumeInfo> ();
+    	volumes.add(volume1);
+    	assertEquals(client.generateNextVolumeName(volumes, "volume"), "volume-2");
+    	assertTrue(client.setAdminState(appInstanceName, false));
+    	assertTrue(client.deleteAppInstance(appInstanceName));
+    }
+    
+    @Test
+    public void testCreateNextVolume() {
+    	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
+    	String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst-", UUID.randomUUID().toString());
+    	assertTrue(client.createAppInstance(appInstanceName));
+    	assertTrue(client.createStorageInstance(appInstanceName, client.defaultStorageName, "default"));
+    	assertTrue(client.createVolume(appInstanceName, client.defaultStorageName, client.defaultVolumeName, 1, 2));
+    	assertEquals(client.createNextVolume(appInstanceName, client.defaultStorageName, 3), "volume-2");
+    	assertTrue(client.setAdminState(appInstanceName, false));
+    	assertTrue(client.deleteAppInstance(appInstanceName));
+    }
+    
+    @Test
+    public void testUpdateQos() {
+    	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
+    	assertTrue(client.createVolume(APPINSTNAME, client.defaultStorageName, "volume-12", 2, 2));
+    	assertTrue(client.setQos(APPINSTNAME, client.defaultStorageName, "volume-12", 1100000L));
+    	assertTrue(client.updateQos(APPINSTNAME, client.defaultStorageName, "volume-12", 1100010L));
+    }
+    
+    @Test
+    public void testGetAppInstance() {
+    	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
+    	String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst-", UUID.randomUUID().toString());
+    	assertTrue(client.createAppInstance(appInstanceName));
+    	DateraModel.AppModel appInst = client.getAppInstanceInfo(appInstanceName);
+    	assertTrue(appInst.name.equals(appInstanceName));
+    	assertTrue(client.setAdminState(appInstanceName, false));
+    	assertTrue(client.deleteAppInstance(appInstanceName));
+    }
+    
+    @Test
+    public void testGetQos() {
+    	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
+    	String appInstanceName = DateraUtil.generateAppInstanceName("test-appInst-", UUID.randomUUID().toString());
+    	assertTrue(client.createAppInstance(appInstanceName));
+    	assertTrue(client.createStorageInstance(appInstanceName, client.defaultStorageName, "default"));
+    	assertTrue(client.createVolume(appInstanceName, client.defaultStorageName, "volume-12", 1, 3));
+    	
+    	assertTrue(client.setQos(appInstanceName, client.defaultStorageName, "volume-12", 100000L));
+    	DateraModel.PerformancePolicy  policy = client.getQos(appInstanceName, client.defaultStorageName, "volume-12");
+    	assertTrue(policy.totalIopsMax == 100000L);
+    	assertTrue(client.setAdminState(appInstanceName, false));
+    	assertTrue(client.deleteAppInstance(appInstanceName));
+    }
+
 }
 
