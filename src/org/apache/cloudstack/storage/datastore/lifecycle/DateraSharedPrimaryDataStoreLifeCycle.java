@@ -193,7 +193,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         int storagePort = DateraUtil.DEFAULT_STORAGE_PORT;
         String storagePath = "";
         DateraRestClient rest= new DateraRestClient(managementVip, managementPort, managementUsername, managementPassword);
-        DateraUtil.DateraMetaData dtMetaData = new DateraUtil.DateraMetaData(managementVip, managementPort, managementUsername, managementPassword, storagePoolName, replica, networkPoolName, appInstanceName, storageInstanceName, clvmVolumeGroupName);
+        DateraUtil.DateraMetaData dtMetaData = new DateraUtil.DateraMetaData(managementVip, managementPort, managementUsername, managementPassword, storagePoolName, replica, networkPoolName, appInstanceName, storageInstanceName,"" ,clvmVolumeGroupName);
 
         if(isDateraSupported(hypervisorType))
         {
@@ -222,11 +222,11 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             storageVip = clvmVolumeGroupName;
             storagePath = clvmVolumeGroupName;
         }
-        String volumeGroupName = DateraUtil.generateInitiatorGroupName(appInstanceName);
+        String initiatorGroupName = DateraUtil.generateInitiatorGroupName(appInstanceName);
         Map<String, String> initiators = extractInitiators(clusterId);
         DateraRestClientMgr.getInstance().registerInitiators(rest, managementVip, managementPort,
                 managementUsername, managementPassword, appInstanceName,
-                storageInstanceName, volumeGroupName, initiators, _timeout);
+                storageInstanceName, initiatorGroupName, initiators, _timeout);
 
         parameters.setUuid(iqn);
 
@@ -238,7 +238,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         details.put(DateraUtil.STORAGE_NAME, storageInstanceName);
         details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
         details.put(DateraUtil.CLVM_VOLUME_GROUP_NAME,clvmVolumeGroupName);
-        details.put(DateraUtil.VOLUME_GROUP_NAME, volumeGroupName);
+        details.put(DateraUtil.INITIATOR_GROUP_NAME, initiatorGroupName);
 
         if (HypervisorType.VMware.equals(hypervisorType)) {
             String datastore = iqn.replace("/", "_");

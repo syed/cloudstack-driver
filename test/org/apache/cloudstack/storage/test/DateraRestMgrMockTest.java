@@ -58,7 +58,7 @@ public class DateraRestMgrMockTest {
     	restMgr = DateraRestClientMgr.getInstance();
     	dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
     			DateraCommon.PASSWORD, null, DateraCommon.DEFAULT_REPLICA, 
-    			DateraCommon.DEFAULT_NETWORK_POOL_NAME, appName, rest.defaultStorageName, null);
+    			DateraCommon.DEFAULT_NETWORK_POOL_NAME, appName, rest.defaultStorageName, null,null);
     }
     
     @Test
@@ -146,7 +146,7 @@ public class DateraRestMgrMockTest {
     
     @Test
     public void testdDeleteInitiatorGroup() {
-    	when(rest.deleteInitiatorGroup(dtMetaData.volumeGroupName)).thenReturn(true);
+    	when(rest.deleteInitiatorGroup(dtMetaData.initiatorGroupName)).thenReturn(true);
     	assertTrue(restMgr.deleteInitiatorGroup(rest, dtMetaData));
     }
     

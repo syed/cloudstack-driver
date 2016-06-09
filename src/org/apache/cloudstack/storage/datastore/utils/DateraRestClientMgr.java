@@ -106,7 +106,7 @@ public class DateraRestClientMgr {
         {
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
-        return rest.deleteInitiatorGroup(dtMetaData.volumeGroupName);
+        return rest.deleteInitiatorGroup(dtMetaData.initiatorGroupName);
     }
     public boolean deleteAppInstanceAndInitiatorGroup(DateraUtil.DateraMetaData dtMetaData)
     {
@@ -201,5 +201,32 @@ public class DateraRestClientMgr {
            }
        }
        return appName;
+    }
+    public String generateInitiatorGroupName(DateraRestClient rest,
+            List<String> iqns, String preferredPrefix) {
+        String initiatorGroupName = "";
+        if(null == preferredPrefix || preferredPrefix.isEmpty())
+        {
+            initiatorGroupName = "csIG_";
+        }
+        else
+        {
+            initiatorGroupName = preferredPrefix;
+        }
+
+        List<String> initiatorGroups = rest.enumerateInitiatorGroups();
+        int counter=1;
+        for(;;)
+        {
+            if(false == initiatorGroups.contains(initiatorGroupName))
+            {
+                break;
+            }
+            else
+            {
+                initiatorGroupName += counter++;
+            }
+        }
+        return initiatorGroupName;
     }
 }
