@@ -33,8 +33,8 @@ public class DateraRestClientMgr {
         if(false == rest.enumerateNetworkPool().contains(networkPoolName))
             throw new CloudRuntimeException("Network pool does not exists : "+networkPoolName);
 
-        String storageInstanceName = rest.defaultStorageName;
-        String volumeInstanceName = rest.defaultVolumeName;
+        String storageInstanceName = DateraModel.defaultStorageName;
+        String volumeInstanceName = DateraModel.defaultVolumeName;
         String accessControlMode = DateraRestClient.ACCESS_CONTROL_MODE_ALLOW_ALL;
         int dtVolSize = DateraUtil.getVolumeSizeInGB(capacityBytes);
         rest.createVolume(appInstanceName, null, null, dtVolSize, replica, accessControlMode, networkPoolName);
@@ -124,7 +124,7 @@ public class DateraRestClientMgr {
         }
         int dtVolumeSize = getDateraCompatibleVolumeInGB(capacityBytes);
         rest.setAdminState(dtMetaData.appInstanceName, false);
-        ret = rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, dtVolumeSize);
+        ret = rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, DateraModel.defaultVolumeName, dtVolumeSize);
         rest.setAdminState(dtMetaData.appInstanceName, true);
         return ret;
     }
@@ -135,7 +135,7 @@ public class DateraRestClientMgr {
         {
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
-        ret = rest.updateQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, capacityIops);
+        ret = rest.updateQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, DateraModel.defaultVolumeName, capacityIops);
         return ret;
     }
 
@@ -170,7 +170,7 @@ public class DateraRestClientMgr {
         {
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
-        return rest.getQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName);
+        return rest.getQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, DateraModel.defaultVolumeName);
     }
     public String suggestAppInstanceName(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData, String suggestedAppName)
     {

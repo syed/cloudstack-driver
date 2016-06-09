@@ -33,6 +33,7 @@ import java.util.UUID;
 
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo.StorageInstance;
+import org.apache.cloudstack.storage.datastore.utils.DateraModel;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClientMgr;
@@ -58,7 +59,7 @@ public class DateraRestMgrMockTest {
     	restMgr = DateraRestClientMgr.getInstance();
     	dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
     			DateraCommon.PASSWORD, null, DateraCommon.DEFAULT_REPLICA, 
-    			DateraCommon.DEFAULT_NETWORK_POOL_NAME, appName, rest.defaultStorageName, null,null);
+    			DateraCommon.DEFAULT_NETWORK_POOL_NAME, appName, DateraModel.defaultStorageName, null,null);
     }
     
     @Test
@@ -73,17 +74,17 @@ public class DateraRestMgrMockTest {
         when(rest.createVolume(appName, null, null, dtVolSize, DateraCommon.DEFAULT_REPLICA, 
         		DateraRestClient.ACCESS_CONTROL_MODE_ALLOW_ALL, DateraCommon.DEFAULT_NETWORK_POOL_NAME)).thenReturn(new AppInstanceInfo());
 
-        when(rest.setQos(appName, rest.defaultStorageName, rest.defaultVolumeName, DateraCommon.DEFAULT_CAPACITY_IOPS)).thenReturn(true);
+        when(rest.setQos(appName, DateraModel.defaultStorageName, DateraModel.defaultVolumeName, DateraCommon.DEFAULT_CAPACITY_IOPS)).thenReturn(true);
         
         AppInstanceInfo.VolumeInfo volInfo = new AppInstanceInfo().new VolumeInfo();
-        volInfo.name = rest.defaultVolumeName;
+        volInfo.name = DateraModel.defaultVolumeName;
         volInfo.opState = "available";
 
-        when(rest.getVolumeInfo(appName, rest.defaultStorageName, rest.defaultVolumeName)).thenReturn(volInfo);
+        when(rest.getVolumeInfo(appName, DateraModel.defaultStorageName, DateraModel.defaultVolumeName)).thenReturn(volInfo);
     	
         when(rest.setAdminState(appName, false)).thenReturn(true);
         when(rest.deleteAppInstance(appName)).thenReturn(true);
-        when(rest.getStorageInfo(appName, rest.defaultStorageName)).thenReturn(null);
+        when(rest.getStorageInfo(appName, DateraModel.defaultStorageName)).thenReturn(null);
     	
     	restMgr.createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
     			DateraCommon.PASSWORD, appName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES, 
@@ -104,10 +105,10 @@ public class DateraRestMgrMockTest {
     	when(rest.createInitiatorGroup("test_init_grp_1", regInitList)).thenReturn(true);
     	List<String> initGroups = new ArrayList <String>();
     	initGroups.add("test_init_grp_1");
-    	when(rest.updateStorageWithInitiator(appName, rest.defaultStorageName, null, initGroups)).thenReturn(true);
+    	when(rest.updateStorageWithInitiator(appName, DateraModel.defaultStorageName, null, initGroups)).thenReturn(true);
 
     	restMgr.registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
-    			DateraCommon.PASSWORD, appName, rest.defaultStorageName, "test_init_grp_1", initiators, 10L);
+    			DateraCommon.PASSWORD, appName, DateraModel.defaultStorageName, "test_init_grp_1", initiators, 10L);
     }
     
     @Test
@@ -115,7 +116,7 @@ public class DateraRestMgrMockTest {
     	
     	int dtVolumeSize = restMgr.getDateraCompatibleVolumeInGB(DateraCommon.DEFAULT_CAPACITY_BYTES);
     	when(rest.setAdminState(dtMetaData.appInstanceName, false)).thenReturn(true);
-        when(rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, rest.defaultVolumeName, dtVolumeSize)).thenReturn(true);
+        when(rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, DateraModel.defaultVolumeName, dtVolumeSize)).thenReturn(true);
         when(rest.setAdminState(dtMetaData.appInstanceName, true)).thenReturn(true);
         assertTrue(restMgr.updatePrimaryStorageCapacityBytes(rest, dtMetaData, DateraCommon.DEFAULT_CAPACITY_BYTES));
     }
@@ -124,7 +125,7 @@ public class DateraRestMgrMockTest {
     public void testUpdatePrimaryStorageIOPS() {
     	
     	when(rest.updateQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName,
-    			rest.defaultVolumeName, DateraCommon.DEFAULT_CAPACITY_IOPS)).thenReturn(true);
+    			DateraModel.defaultVolumeName, DateraCommon.DEFAULT_CAPACITY_IOPS)).thenReturn(true);
     	assertTrue(restMgr.updatePrimaryStorageIOPS(rest, dtMetaData, DateraCommon.DEFAULT_CAPACITY_IOPS));
     }
     

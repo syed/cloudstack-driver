@@ -35,6 +35,7 @@ import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
+import org.apache.cloudstack.storage.datastore.utils.DateraModel;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.apache.cloudstack.storage.volume.datastore.PrimaryDataStoreHelper;
@@ -196,17 +197,17 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
              throw new CloudRuntimeException("App name already exists : "+appInstanceName);
 
         rest.createAppInstance(appInstanceName);
-        rest.createStorageInstance(appInstanceName, rest.defaultStorageName,networkPoolName);
-        String volumeName = rest.createNextVolume(appInstanceName, rest.defaultStorageName,1);
+        rest.createStorageInstance(appInstanceName, DateraModel.defaultStorageName,networkPoolName);
+        String volumeName = rest.createNextVolume(appInstanceName, DateraModel.defaultStorageName,1);
         rest.setAdminState(appInstanceName, false);
-        rest.deleteVolume(appInstanceName, rest.defaultStorageName, volumeName);
+        rest.deleteVolume(appInstanceName, DateraModel.defaultStorageName, volumeName);
         rest.setAdminState(appInstanceName, true);
 
 /*
         //rest.createVolume(appInstanceName, rest.defaultStorageName, rest.defaultVolumeName, 2);
         rest.createVolume(appInstanceName, null, null, 2, 3, "allow_all", "/access_network_ip_pools/"+networkPoolName);
 */
-        return rest.getStorageInfo(appInstanceName, rest.defaultStorageName);
+        return rest.getStorageInfo(appInstanceName, DateraModel.defaultStorageName);
      }
 
     private AppInstanceInfo.StorageInstance createDateraVolume(String storageVip, int storagePort, String clusterAdminUsername,

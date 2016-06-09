@@ -53,8 +53,6 @@ public class DateraRestClient {
  private int managementPort;
  private String userName;
  private String password;
- public final String defaultStorageName = "storage-1";
- public final String defaultVolumeName = "volume-1";
  private static final String CONFLICT_ERROR = "ConflictError";
  private static final String AUTH_FAILED_ERROR = "AuthFailedError";
  private static final String DATERA_LOG_PREFIX = "Datera : ";
@@ -516,7 +514,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
     new DateraModel.StorageInstanceModel(
       new DateraModel.StorageModel(networkPoolName,
         new DateraModel.VolumeInstanceModel(
-          new DateraModel.VolumeModel(defaultVolumeName, volumeGB, volReplica)),new DateraModel.ACLPolicyModel(initiators,initiatorGroups))));
+          new DateraModel.VolumeModel(DateraModel.defaultVolumeName, volumeGB, volReplica)),new DateraModel.ACLPolicyModel(initiators,initiatorGroups))));
 
   payload = gson.toJson(app);
 

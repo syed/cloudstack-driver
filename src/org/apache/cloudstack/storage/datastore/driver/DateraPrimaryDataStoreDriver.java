@@ -36,6 +36,7 @@ import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
+import org.apache.cloudstack.storage.datastore.utils.DateraModel;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.apache.log4j.Logger;
@@ -164,7 +165,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         initiators.add(hostIqn);
         String groupName = "cs_"+appInstanceName;
         DateraRestClient rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
-        storageInstanceName = rest.defaultStorageName;
+        storageInstanceName = DateraModel.defaultStorageName;
         rest.registerInitiators(initiators);
         rest.createInitiatorGroup(groupName, initiators);
         List<String> initiatorGroups = new ArrayList<String>();
@@ -311,13 +312,13 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
             int dtVolSize =  DateraUtil.getVolumeSizeInGB(volumeInfo.getSize());
-            String dtVolumeName = rest.createNextVolume(dtMetaData.appInstanceName, rest.defaultStorageName, dtVolSize);
+            String dtVolumeName = rest.createNextVolume(dtMetaData.appInstanceName, DateraModel.defaultStorageName, dtVolSize);
             if(null == dtVolumeName || dtVolumeName.isEmpty())
             {
                 throw new CloudRuntimeException("Datera : Could not create a volume");
             }
             int lunId = rest.getIntPart(dtVolumeName);
-            AppInstanceInfo.VolumeInfo dtVolumeInfo =  rest.getVolumeInfo(dtMetaData.appInstanceName, rest.defaultStorageName, dtVolumeName);
+            AppInstanceInfo.VolumeInfo dtVolumeInfo =  rest.getVolumeInfo(dtMetaData.appInstanceName, DateraModel.defaultStorageName, dtVolumeName);
 /*
             String dtAppInstanceName = DateraUtil.generateAppInstanceName(dtMetaData.storagePoolName,volumeInfo.getUuid());
 
@@ -411,7 +412,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 rest.setAdminState(dtMetaData.appInstanceName, false);
                 String volumeName = DateraUtil.constructVolumeName(volumeInfo.getFolder());
 
-                rest.deleteVolume(dtMetaData.appInstanceName, rest.defaultStorageName, volumeName);
+                rest.deleteVolume(dtMetaData.appInstanceName, DateraModel.defaultStorageName, volumeName);
                 rest.setAdminState(dtMetaData.appInstanceName, true);
 
 

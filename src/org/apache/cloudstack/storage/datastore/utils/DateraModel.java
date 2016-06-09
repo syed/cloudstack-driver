@@ -6,8 +6,8 @@ import com.google.gson.annotations.SerializedName;
 
 public class DateraModel {
 
-    public static final String defaultStorage="storage-1";
-    public static final String defaultVolume="volume-1";
+    public static final String defaultStorageName="storage-1";
+    public static final String defaultVolumeName="volume-1";
     public static class LoginModel
      {
       public String name;
@@ -46,7 +46,7 @@ public class DateraModel {
 
      public static class StorageInstanceModel
      {
-      @SerializedName(defaultStorage)
+      @SerializedName(defaultStorageName)
       public StorageModel storage1;
 
       public StorageInstanceModel(StorageModel st)
@@ -57,7 +57,7 @@ public class DateraModel {
 
      public static class StorageModel
      {
-      public String name = defaultStorage;
+      public String name = defaultStorageName;
       public VolumeInstanceModel volumes;
       @SerializedName("acl_policy")
       public ACLPolicyModel aclPolicy;
@@ -73,7 +73,7 @@ public class DateraModel {
 
      public static class VolumeInstanceModel
      {
-      @SerializedName(defaultVolume)
+      @SerializedName(defaultVolumeName)
       public VolumeModel volume1;
 
       public VolumeInstanceModel(VolumeModel vol)
@@ -83,7 +83,7 @@ public class DateraModel {
      }
      public static class VolumeModel {
 
-      public String name = defaultVolume;
+      public String name = defaultVolumeName;
       public int size;
       @SerializedName("replica_count")
       public int replicaCount;

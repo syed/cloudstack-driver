@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
+import org.apache.cloudstack.storage.datastore.utils.DateraModel;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.junit.Test;
@@ -100,8 +101,8 @@ public class DateraSharedStorageTests {
         assertEquals(false,rest.isAppInstanceExists(appInstanceName));
         assertEquals(true,rest.enumerateNetworkPool().contains(networkPoolName));
         
-        String storageInstanceName = rest.defaultStorageName;
-        String volumeInstanceName = rest.defaultVolumeName;
+        String storageInstanceName = DateraModel.defaultStorageName;
+        String volumeInstanceName = DateraModel.defaultVolumeName;
         
         rest.createVolume(appInstanceName, null, null, dtVolSize, replica, accessControlMode, networkPoolName);
         AppInstanceInfo.VolumeInfo volInfo = rest.getVolumeInfo(appInstanceName, storageInstanceName, volumeInstanceName);

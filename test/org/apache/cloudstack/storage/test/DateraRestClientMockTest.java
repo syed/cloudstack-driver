@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.cloudstack.storage.datastore.utils.DateraModel;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 
@@ -87,15 +88,15 @@ public class DateraRestClientMockTest {
     	
     	when(client.createAppInstance(appInstanceName)).thenReturn(true);
     	when(client.createStorageInstance(appInstanceName, storageInst, "default")).thenReturn(true);
-    	when(client.createVolume(appInstanceName, client.defaultStorageName, volumeName1, 1, 3)).thenReturn(true);
+    	when(client.createVolume(appInstanceName, DateraModel.defaultStorageName, volumeName1, 1, 3)).thenReturn(true);
     	
     	assertTrue(client.createAppInstance(appInstanceName));
     	assertTrue(client.createStorageInstance(appInstanceName, storageInst, "default"));
-    	assertTrue(client.createVolume(appInstanceName, client.defaultStorageName, volumeName1, 1, 3));
+    	assertTrue(client.createVolume(appInstanceName, DateraModel.defaultStorageName, volumeName1, 1, 3));
     	
     	// Volume creation with same name not allowed
-    	when(client.createVolume(appInstanceName, client.defaultStorageName, volumeName1, 2, 2)).thenReturn(false);
-    	assertFalse(client.createVolume(appInstanceName, client.defaultStorageName, volumeName1, 2, 2));
+    	when(client.createVolume(appInstanceName, DateraModel.defaultStorageName, volumeName1, 2, 2)).thenReturn(false);
+    	assertFalse(client.createVolume(appInstanceName, DateraModel.defaultStorageName, volumeName1, 2, 2));
     }
 
     @Test
@@ -111,7 +112,7 @@ public class DateraRestClientMockTest {
     	
     	assertTrue(client.createAppInstance(appInstanceName));
     	assertTrue(client.createStorageInstance(appInstanceName, storageInst, "default"));
-    	assertTrue(client.createVolume(appInstanceName, client.defaultStorageName, volumeName, 2, 3));
+    	assertTrue(client.createVolume(appInstanceName, DateraModel.defaultStorageName, volumeName, 2, 3));
 
     	// Volume deletion is not allowed while Application instance is online
     	when(client.deleteVolume(appInstanceName, storageInst, volumeName)).thenReturn(false);
