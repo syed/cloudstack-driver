@@ -76,7 +76,7 @@ public class DateraRestClientMgr {
         }
         else if(0 != volInfo.opState.compareTo(DateraRestClient.OP_STATE_AVAILABLE))
         {
-            err = String.format("Volume's  opstate = %s /%s/%s/%s ",volInfo.opState,appInstanceName,storageInstanceName,volumeInstanceName);
+            err = String.format("Unable to create primary storage %s \n Reason: Volume's  opstate = %s /%s/%s/%s ",appInstanceName,volInfo.opState,appInstanceName,storageInstanceName,volumeInstanceName);
             volumeCreationSuccess = false;
         }
         if(false == volumeCreationSuccess)
@@ -428,7 +428,7 @@ public class DateraRestClientMgr {
             {
                 if(allowThrowException)
                 {
-                    throw new CloudRuntimeException("Could not get check existance of app instance");
+                    throw new CloudRuntimeException("Could not set the admin state");
                 }
                 else
                 {

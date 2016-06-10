@@ -300,6 +300,7 @@ public class DateraRestClientMgrTests {
     @Test
     public void utCaptureAllMethods()
     {
+        dateraCleanup = false;
         DateraRestClientMgr.getInstance().setAllowThrowException(false);
         assertFalse(DateraRestClientMgr.getInstance().isAllowThrowException());
         
@@ -315,6 +316,7 @@ public class DateraRestClientMgrTests {
         assertEquals(null, DateraRestClientMgr.getInstance().generateInitiatorGroupName(null,null,null,null));
         assertEquals(false, DateraRestClientMgr.getInstance().unRegisterInitiators(null,null,null));
         assertEquals(false, DateraRestClientMgr.getInstance().isAppInstanceExists(null,null));
+        assertEquals(false, DateraRestClientMgr.getInstance().setAdminState(null,null,false));
         List<String> tempList = new ArrayList<String>();
         tempList.add(DateraCommon.INITIATOR_1);
         assertEquals(false, DateraRestClientMgr.getInstance().unRegisterInitiators(null, null,tempList));
@@ -362,7 +364,7 @@ public class DateraRestClientMgrTests {
         assertTrue(null != policy);
         assertEquals(DateraCommon.DEFAULT_CAPACITY_IOPS,policy.totalIopsMax);
 
-        assertFalse(false == DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummyApp", "storage-1", initiatorGroupName, initiators, 1));
+        assertTrue(false == DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummyApp", "storage-1", initiatorGroupName, initiators, 1));
 
         
         boolean allowThrowException = DateraRestClientMgr.getInstance().isAllowThrowException();
@@ -395,8 +397,12 @@ public class DateraRestClientMgrTests {
         {
             assertEquals(CloudRuntimeException.class, ex.getClass());
         }
+        
         DateraRestClientMgr.getInstance().setAllowThrowException(allowThrowException);
 
+        
+        assertTrue(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData));
+        assertTrue(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData));
         
     }
     @Test
@@ -522,6 +528,14 @@ public class DateraRestClientMgrTests {
         try
         {
             DateraRestClientMgr.getInstance().unRegisterInitiators(null, null,tempList);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+        try
+        {
+            DateraRestClientMgr.getInstance().setAdminState(null, null,false);
         }
         catch(Exception ex)
         {
