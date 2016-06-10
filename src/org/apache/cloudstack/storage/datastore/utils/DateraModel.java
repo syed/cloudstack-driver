@@ -112,11 +112,18 @@ public class DateraModel {
      {
        @SerializedName("admin_state")
        public String adminState;
+       public boolean force;
 
        public AdminPrivilege(String paramAdminState)
        {
         adminState = paramAdminState;
        }
+       public AdminPrivilege(String paramAdminState, boolean force)
+       {
+        this.adminState = paramAdminState;
+        this.force = force;
+       }
+
      }
 
      public static class GenericResponse

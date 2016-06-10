@@ -362,6 +362,42 @@ public class DateraRestClientMgrTests {
         assertTrue(null != policy);
         assertEquals(DateraCommon.DEFAULT_CAPACITY_IOPS,policy.totalIopsMax);
 
+        assertFalse(false == DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummyApp", "storage-1", initiatorGroupName, initiators, 1));
+
+        
+        boolean allowThrowException = DateraRestClientMgr.getInstance().isAllowThrowException();
+        DateraRestClientMgr.getInstance().setAllowThrowException(true);
+
+        try
+        {
+            DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        
+        try
+        {
+            DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, "nonexsistingPoolName", DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummyApp", "storage-1", initiatorGroupName, initiators, 1);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+        DateraRestClientMgr.getInstance().setAllowThrowException(allowThrowException);
+
+        
     }
     @Test
     public void utTestExceptions()

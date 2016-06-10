@@ -332,7 +332,15 @@ public class DateraRestClient {
  }
  public boolean setAdminState(String appInstance,boolean online)
  {
-  DateraModel.AdminPrivilege prev = new DateraModel.AdminPrivilege( online ? "online" : "offline");
+     DateraModel.AdminPrivilege prev = null;
+     if(online)
+      {
+         prev = new DateraModel.AdminPrivilege("online");
+      }
+     else
+     {
+         prev =  new DateraModel.AdminPrivilege("offline",true);
+     }
 
   HttpPut putRequest = new HttpPut("/v2/app_instances/"+appInstance);
   setHeaders(putRequest);

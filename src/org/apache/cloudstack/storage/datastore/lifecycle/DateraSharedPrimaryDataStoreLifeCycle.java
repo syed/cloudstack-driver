@@ -445,6 +445,9 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         _storagePoolAutomation.maintain(dataStore);
         _primaryDataStoreHelper.maintain(dataStore);
 
+        StoragePool storagePool = (StoragePool)dataStore;
+        DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
+        DateraRestClientMgr.getInstance().setAdminState(null, dtMetaData, false);
         return true;
     }
 
@@ -452,6 +455,10 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
     public boolean cancelMaintain(DataStore store) {
         _primaryDataStoreHelper.cancelMaintain(store);
         _storagePoolAutomation.cancelMaintain(store);
+
+        StoragePool storagePool = (StoragePool)store;
+        DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
+        DateraRestClientMgr.getInstance().setAdminState(null, dtMetaData, true);
 
         return true;
     }

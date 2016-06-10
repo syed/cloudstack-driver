@@ -89,7 +89,7 @@ public class DateraRestClientMgr {
         return rest.getStorageInfo(appInstanceName, storageInstanceName);
     }
 
-    public void registerInitiators(DateraRestClient rest, String managementIP,
+    public boolean registerInitiators(DateraRestClient rest, String managementIP,
             int managementPort, String managementUsername,
             String managementPassword, String appInstanceName,
             String storageInstanceName, String initiatorGroupName,
@@ -111,7 +111,7 @@ public class DateraRestClientMgr {
             }
             else
             {
-                return;
+                return false;
             }
         }
 
@@ -120,6 +120,7 @@ public class DateraRestClientMgr {
             Thread.sleep(timeout);
         } catch (InterruptedException e) {
         }
+        return true;
     }
     public boolean deleteAppInstance(DateraRestClient rest,
         DateraUtil.DateraMetaData dtMetaData) {
@@ -417,5 +418,25 @@ public class DateraRestClientMgr {
         }
 
         return rest.isAppInstanceExists(dtMetaData.appInstanceName);
+    }
+
+    public boolean setAdminState(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData, boolean online)
+    {
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not get check existance of app instance");
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        return rest.setAdminState(dtMetaData.appInstanceName, online);
     }
 }
