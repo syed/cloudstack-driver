@@ -18,6 +18,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.cloud.utils.exception.CloudRuntimeException;
+
 @RunWith(MockitoJUnitRunner.class)
 public class DateraRestClientMgrTests {
 
@@ -25,20 +27,25 @@ public class DateraRestClientMgrTests {
     private String appInstanceName="";
     private List<String> iqns = null;
     private DateraUtil.DateraMetaData dtMetaData = null;
+    private boolean dateraCleanup = true;
+    
     @After
     public void cleanUp() {
-        if(null == rest)
+        if(dateraCleanup)
         {
-            rest = new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
+            if(null == rest)
+            {
+                rest = new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
+            }
+            
+            assertTrue(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData));
+    
+            assertEquals(false,DateraRestClientMgr.getInstance().isAppInstanceExists(rest, dtMetaData));
+            
+            assertTrue(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData));
+    
+            assertTrue(DateraRestClientMgr.getInstance().unRegisterInitiators(rest,dtMetaData,iqns));
         }
-        
-        assertTrue(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData));
-
-        assertEquals(false,DateraRestClientMgr.getInstance().isAppInstanceExists(rest, dtMetaData));
-        
-        assertTrue(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData));
-
-        assertTrue(DateraRestClientMgr.getInstance().unRegisterInitiators(rest,dtMetaData,iqns));
     }
 
     @Test
@@ -294,7 +301,8 @@ public class DateraRestClientMgrTests {
     public void utCaptureAllMethods()
     {
         DateraRestClientMgr.getInstance().setAllowThrowException(false);
-
+        assertFalse(DateraRestClientMgr.getInstance().isAllowThrowException());
+        
         assertEquals(false, DateraRestClientMgr.getInstance().deleteAppInstance(null, null));
         assertEquals(false, DateraRestClientMgr.getInstance().deleteInitiatorGroup(null, null));
         assertEquals(false, DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(null));
@@ -307,6 +315,9 @@ public class DateraRestClientMgrTests {
         assertEquals(null, DateraRestClientMgr.getInstance().generateInitiatorGroupName(null,null,null,null));
         assertEquals(false, DateraRestClientMgr.getInstance().unRegisterInitiators(null,null,null));
         assertEquals(false, DateraRestClientMgr.getInstance().isAppInstanceExists(null,null));
+        List<String> tempList = new ArrayList<String>();
+        tempList.add(DateraCommon.INITIATOR_1);
+        assertEquals(false, DateraRestClientMgr.getInstance().unRegisterInitiators(null, null,tempList));
 
         //5368709120 = 5GB
         long newCapacity = 5368709120L;
@@ -325,8 +336,8 @@ public class DateraRestClientMgrTests {
         dtMetaData.initiatorGroupName = "";
         dtMetaData.clvmVolumeGroupName = "dummyCLVM";
 
-        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
-        String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
+        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, "App");
+        String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,null);
         dtMetaData.appInstanceName = appInstanceName;
         dtMetaData.initiatorGroupName = initiatorGroupName;
         DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
@@ -334,6 +345,9 @@ public class DateraRestClientMgrTests {
         assertTrue(null != appModel);
         assertEquals(dtMetaData.appInstanceName,appModel.name);
         assertEquals(DateraUtil.ADMIN_STATE_ONLINE, appModel.adminState);
+
+        assertEquals(null, DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS));
+        assertEquals(null, DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, "nonexsistingPoolName", DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS));
         
         Map<String,String> initiators = new HashMap<String,String>();
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_1);
@@ -347,6 +361,136 @@ public class DateraRestClientMgrTests {
         DateraModel.PerformancePolicy policy = DateraRestClientMgr.getInstance().getQos(rest, dtMetaData);
         assertTrue(null != policy);
         assertEquals(DateraCommon.DEFAULT_CAPACITY_IOPS,policy.totalIopsMax);
+
+    }
+    @Test
+    public void utTestExceptions()
+    {
+        dateraCleanup = false;
+        DateraRestClientMgr.getInstance().setAllowThrowException(true);
+        assertTrue(DateraRestClientMgr.getInstance().isAllowThrowException());
+        
+        
+        //all the method calls will throw exception, need to do for maximum code coverage
+        try
+        {
+            DateraRestClientMgr.getInstance().deleteAppInstance(null, null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().deleteInitiatorGroup(null, null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+           DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().updatePrimaryStorageCapacityBytes(null,null,10000);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().updatePrimaryStorageIOPS(null,null,10000);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().getStorageInfo(null,null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().getAppInstanceInfo(null,null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().getQos(null,null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().suggestAppInstanceName(null,null,null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().generateInitiatorGroupName(null,null,null,null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+        
+        try
+        {
+            DateraRestClientMgr.getInstance().unRegisterInitiators(null,null,null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        try
+        {
+            DateraRestClientMgr.getInstance().isAppInstanceExists(null,null);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
+
+        List<String> tempList = new ArrayList<String>();
+        tempList.add(DateraCommon.INITIATOR_1);
+
+        try
+        {
+            DateraRestClientMgr.getInstance().unRegisterInitiators(null, null,tempList);
+        }
+        catch(Exception ex)
+        {
+            assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
 
     }
 }

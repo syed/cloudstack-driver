@@ -119,8 +119,6 @@ public class DateraRestClientMgr {
             s_logger.info("Waiting for the datera to setup everything , "+timeout);
             Thread.sleep(timeout);
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         }
     }
     public boolean deleteAppInstance(DateraRestClient rest,
