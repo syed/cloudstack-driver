@@ -10,6 +10,14 @@ import com.cloud.utils.exception.CloudRuntimeException;
 public class DateraRestClientMgr {
     private static final Logger s_logger = Logger.getLogger(DateraRestClientMgr.class);
 
+    private boolean allowThrowException = true;
+    public boolean isAllowThrowException() {
+        return allowThrowException;
+    }
+    public void setAllowThrowException(boolean allowThrowException) {
+        this.allowThrowException = allowThrowException;
+    }
+
     private static DateraRestClientMgr instance = null;
     public static DateraRestClientMgr getInstance()
     {
@@ -28,10 +36,28 @@ public class DateraRestClientMgr {
           rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
         }
         if(rest.isAppInstanceExists(appInstanceName))
-             throw new CloudRuntimeException("App name already exists : "+appInstanceName);
+        {
+            if(allowThrowException)
+              {
+                throw new CloudRuntimeException("App name already exists : "+appInstanceName);
+              }
+            else
+            {
+                return null;
+            }
+        }
 
         if(false == rest.enumerateNetworkPool().contains(networkPoolName))
-            throw new CloudRuntimeException("Network pool does not exists : "+networkPoolName);
+        {
+            if(allowThrowException)
+            {
+                throw new CloudRuntimeException("Network pool does not exists : "+networkPoolName);
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         String storageInstanceName = DateraModel.defaultStorageName;
         String volumeInstanceName = DateraModel.defaultVolumeName;
@@ -79,7 +105,14 @@ public class DateraRestClientMgr {
         initiatorGroups.add(initiatorGroupName);
         if(false == rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
         {
-            throw new CloudRuntimeException("Could not update storage with initiator ,"+appInstanceName+", "+storageInstanceName);
+            if(allowThrowException)
+            {
+                throw new CloudRuntimeException("Could not update storage with initiator ,"+appInstanceName+", "+storageInstanceName);
+            }
+            else
+            {
+                return;
+            }
         }
 
         try {
@@ -94,6 +127,17 @@ public class DateraRestClientMgr {
         DateraUtil.DateraMetaData dtMetaData) {
         if(null == rest)
         {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not delete app instance");
+                }
+                else
+                {
+                    return false;
+                }
+            }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         rest.setAdminState(dtMetaData.appInstanceName, false);
@@ -104,6 +148,17 @@ public class DateraRestClientMgr {
     {
         if(null == rest)
         {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Cannot delete initiator group");
+                }
+                else
+                {
+                    return false;
+                }
+            }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         return rest.deleteInitiatorGroup(dtMetaData.initiatorGroupName);
@@ -120,6 +175,17 @@ public class DateraRestClientMgr {
         boolean ret = false;
         if(null == rest)
         {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Cannot update capacity bytes");
+                }
+                else
+                {
+                    return false;
+                }
+            }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         int dtVolumeSize = getDateraCompatibleVolumeInGB(capacityBytes);
@@ -133,6 +199,17 @@ public class DateraRestClientMgr {
         boolean ret = false;
         if(null == rest)
         {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not update primary storage");
+                }
+                else
+                {
+                    return false;
+                }
+            }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         ret = rest.updateQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, DateraModel.defaultVolumeName, capacityIops);
@@ -143,6 +220,17 @@ public class DateraRestClientMgr {
     {
         if(null == rest)
         {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not get storage info");
+                }
+                else
+                {
+                    return null;
+                }
+            }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         return rest.getStorageInfo(dtMetaData.appInstanceName, dtMetaData.storageInstanceName);
@@ -153,13 +241,28 @@ public class DateraRestClientMgr {
     }
     public int getDateraCompatibleVolumeInGB(long capacityBytes)
     {
-        capacityBytes = DateraUtil.getVolumeSizeInBytes((long)DateraUtil.getVolumeSizeInGB(capacityBytes));
+        capacityBytes = buildBytesPerGB(capacityBytes);
         return DateraUtil.getVolumeSizeInGB(capacityBytes);
     }
+    public Long buildBytesPerGB(Long capacityBytes) {
+        return DateraUtil.getVolumeSizeInBytes((long)DateraUtil.getVolumeSizeInGB(capacityBytes));
+    }
+
     public DateraModel.AppModel getAppInstanceInfo(DateraRestClient rest,DateraUtil.DateraMetaData dtMetaData)
     {
         if(null == rest)
         {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not get app instance info");
+                }
+                else
+                {
+                    return null;
+                }
+            }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         return rest.getAppInstanceInfo(dtMetaData.appInstanceName);
@@ -168,12 +271,38 @@ public class DateraRestClientMgr {
     {
         if(null == rest)
         {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not get performance policy");
+                }
+                else
+                {
+                    return null;
+                }
+            }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         return rest.getQos(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, DateraModel.defaultVolumeName);
     }
     public String suggestAppInstanceName(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData, String suggestedAppName)
     {
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not generate app instance name");
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
        String appName = "";
        if(null != suggestedAppName)
        {
@@ -182,10 +311,6 @@ public class DateraRestClientMgr {
        else
        {
            appName = "csApp";
-       }
-       if(null == rest)
-       {
-           rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
        }
        List<String> appNames = rest.enumerateAppInstances();
        int counter = 1;
@@ -209,7 +334,14 @@ public class DateraRestClientMgr {
         {
             if(null == dtMetaData)
             {
-                throw new CloudRuntimeException("Cannot generate initiator group name");
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Cannot generate initiator group name");
+                }
+                else
+                {
+                    return null;
+                }
             }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
@@ -237,5 +369,55 @@ public class DateraRestClientMgr {
             }
         }
         return initiatorGroupName;
+    }
+
+    public boolean unRegisterInitiators(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData,  List<String> initiators)
+    {
+        if(null == initiators || 0 == initiators.size())
+        {
+            return false;
+        }
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Cannot unregister initiators");
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP,dtMetaData.managementPort,dtMetaData.managementUserName,dtMetaData.managementPassword);
+        }
+        for(String iter : initiators)
+        {
+            rest.unregisterInitiator(iter);
+        }
+
+        return true;
+    }
+
+    public boolean isAppInstanceExists(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData)
+    {
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not get check existance of app instance");
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+
+        return rest.isAppInstanceExists(dtMetaData.appInstanceName);
     }
 }

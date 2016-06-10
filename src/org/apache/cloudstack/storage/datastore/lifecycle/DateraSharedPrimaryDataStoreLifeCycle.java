@@ -87,7 +87,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         int replica=0;
 
-        capacityBytes = buildBytesPerGB(capacityBytes);
+        capacityBytes = DateraRestClientMgr.getInstance().buildBytesPerGB(capacityBytes);
 
         @SuppressWarnings("unchecked")
         Map<String, String> details = (Map<String, String>)dsInfos.get("details");
@@ -283,9 +283,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
        return ret;
     }
 
-    private Long buildBytesPerGB(Long capacityBytes) {
-        return DateraUtil.getVolumeSizeInBytes((long)DateraUtil.getVolumeSizeInGB(capacityBytes));
-    }
 
     private Map<String, String> extractInitiators(Long clusterId) {
         List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
