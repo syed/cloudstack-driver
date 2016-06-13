@@ -313,7 +313,7 @@ public class DateraRestClientMgr {
        {
            appName = "csApp";
        }
-       
+
        appName+=UUID.randomUUID().toString();
        if(appName.length() > 65)
        {
