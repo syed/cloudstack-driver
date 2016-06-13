@@ -280,7 +280,7 @@ public class DateraUtil {
 
 
     public static int getManagementPort(String url) {
-        return getPort(DateraUtil.MANAGEMENT_IP, url);
+        return getPort(DateraUtil.MANAGEMENT_PORT, url);
     }
 
     public static String getStorageVip(String url) {
