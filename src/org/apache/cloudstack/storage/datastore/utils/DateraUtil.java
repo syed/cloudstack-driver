@@ -110,6 +110,7 @@ public class DateraUtil {
 
     public static final String DATASTORE_NAME = "datastoreName";
     public static final String IQN = "iqn";
+    private static final String DEFAULT_NETWORK_POOL_NAME = "default";
 
 
     private static String getVip(String keyToMatch, String url) {
@@ -279,14 +280,11 @@ public class DateraUtil {
 
 
     public static int getManagementPort(String url) {
-        return getPort(DateraUtil.MANAGEMENT_IP, url, DEFAULT_MANAGEMENT_PORT);
+        return getPort(DateraUtil.MANAGEMENT_IP, url);
     }
 
     public static String getStorageVip(String url) {
         return getVip(DateraUtil.STORAGE_VIP, url);
-    }
-    public static int getStoragePort(String url) {
-        return getPort(DateraUtil.STORAGE_VIP, url, DEFAULT_STORAGE_PORT);
     }
 
     private static String getIP(String keyToMatch, String url) {
@@ -303,26 +301,13 @@ public class DateraUtil {
         return ip;
     }
 
-    private static int getPort(String keyToMatch, String url, int defaultPortNumber) {
-        String delimiter = ":";
-
-        String ip = getValue(keyToMatch, url);
-
-        int index = ip.indexOf(delimiter);
-
-        int portNumber = defaultPortNumber;
-
-        if (index != -1) {
-            String port = ip.substring(index + delimiter.length());
-
-            try {
-                portNumber = Integer.parseInt(port);
-            } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException("Invalid URL format (port is not an integer)");
-            }
+    private static int getPort(String keyToMatch, String url) {
+        String port = getValue(keyToMatch, url);
+        try {
+            return Integer.parseInt(port);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid URL format (port is not an integer)");
         }
-
-        return portNumber;
     }
 
     public static String getValue(String keyToMatch, String url) {
@@ -354,11 +339,17 @@ public class DateraUtil {
         }
 
         if (throwExceptionIfNotFound) {
-            throw new RuntimeException("Key not found in URL");
+            if (keyToMatch.equals(NETWORK_POOL_NAME)) {
+                return DEFAULT_NETWORK_POOL_NAME;
+            }
+            else {
+                throw new RuntimeException(keyToMatch + " not found in the specified url.");
+            }
         }
 
         return null;
     }
+
     private static int getIntegerValue(String key,String url)
     {
         int value = 0;

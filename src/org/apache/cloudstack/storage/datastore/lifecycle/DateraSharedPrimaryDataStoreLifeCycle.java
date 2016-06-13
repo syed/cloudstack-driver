@@ -105,7 +105,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
 
         if (capacityIops == null || capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
-            throw new IllegalArgumentException("'capacity IOPS' must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
+            throw new IllegalArgumentException("'Capacity IOPS' must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
         }
 
         String val = DateraUtil.getValue(DateraUtil.VOLUME_REPLICA, url,false);
