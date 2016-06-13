@@ -248,7 +248,7 @@ public class DateraRestClientTests {
     public void testEnumerateInitiatorNames() {
     	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
     	String iqn = "iqn.2005-03.org.open-iscsi:01cbe94a19";
-    	assertTrue(client.registerInitiator("test_create_initiators_1", iqn));
+    	assertTrue(client.registerInitiator("test_initiator_" + UUID.randomUUID().toString(), iqn));
     	List<String> initiators = client.enumerateInitiatorNames();
     	assertTrue(initiators.contains(iqn));
     }
@@ -315,12 +315,13 @@ public class DateraRestClientTests {
     }
     
     @Test
-    public void testregisterInitiatorsWithLabel() {
+    public void testRegisterInitiatorsWithLabel() {
     	
     	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);
     	Map <String, String> initiators = new HashMap<String, String> ();
     	initiators.put("host1", DateraCommon.INITIATOR_1);
     	List<String> inits = client.registerInitiators(initiators);
+    	inits = client.getInitiators();
     	assertTrue(inits.contains(DateraCommon.INITIATOR_1));
     	assertTrue(client.unregisterInitiator(DateraCommon.INITIATOR_1));
     }
