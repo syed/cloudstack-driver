@@ -404,6 +404,11 @@ public class DateraRestClientMgrTests {
         assertTrue(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData));
         assertTrue(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData));
         
+        String suggestedAppName = "abcdefghijklmnopqrstuvwxyz_abcdefghijklmnopqrstuvwxyz_abcdefghijklmnopqrstuvwxyz";
+        suggestedAppName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, suggestedAppName);
+        assertTrue(suggestedAppName.length()>=3);//lenght of the app instance name 
+        assertTrue(suggestedAppName.length()<=65);//lenght of the app instance name
+        dateraCleanup = true;
     }
     @Test
     public void utTestExceptions()
@@ -542,5 +547,6 @@ public class DateraRestClientMgrTests {
             assertEquals(CloudRuntimeException.class, ex.getClass());
         }
 
+        dateraCleanup = true;
     }
 }
