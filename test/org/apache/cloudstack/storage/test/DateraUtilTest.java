@@ -19,12 +19,14 @@
 
 package org.apache.cloudstack.storage.test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,4 +56,46 @@ public class DateraUtilTest {
     	assertTrue(DateraUtil.getValue(DateraUtil.APP_NAME, url).equals("xen1"));
     	assertTrue(DateraUtil.getValue(DateraUtil.STORAGE_NAME, url).equals("storage-1"));
     }
+	
+	@Test
+	public void testGetNewHostIqn() {
+	   String[] curIqns = {DateraCommon.INITIATOR_1, DateraCommon.INITIATOR_2};
+	   String[] newIqns = {DateraCommon.INITIATOR_3, DateraCommon.INITIATOR_4};
+	   String [] updatedIqns = DateraUtil.getNewHostIqns(curIqns, newIqns);
+	   int count = 0;
+
+	   for (String iqn : updatedIqns) {
+           for (String curIqn : curIqns){
+        	   if (iqn.equals(curIqn)){
+        	       count += 1;
+        	   }
+           }
+           for (String newIqn : newIqns){
+        	   if (iqn.equals(newIqn)) {
+        		   count += 1;
+        	   }
+           }
+	   }
+	   assertEquals(count, 4);	
+	}
+	
+	@Test
+	public void testGetNewVolumeIds() {
+		
+		long[] volumeIds = {1L, 2L, 3L};
+		boolean added = false;
+		boolean deleted = false;
+		
+		long[] updatedVolumeIds = DateraUtil.getNewVolumeIds(volumeIds, 5L, true);
+		for (long ids : updatedVolumeIds) {
+            if(ids == 5L) added = true;
+		}
+		
+		updatedVolumeIds = DateraUtil.getNewVolumeIds(volumeIds, 2L, false);
+		for (long ids : updatedVolumeIds) {
+            if(ids == 2L) deleted = true;
+		}
+		assertTrue(added);
+		assertFalse(deleted);
+	}
 }
