@@ -313,24 +313,20 @@ public class DateraRestClientMgr {
        {
            appName = "csApp";
        }
+       String prefix = appName;
 
-       appName+=UUID.randomUUID().toString();
-       if(appName.length() > 65)
-       {
-           String truncated = appName.substring(0,65);
-           appName = truncated;
-       }
        List<String> appNames = rest.enumerateAppInstances();
-       int counter = 1;
        for(;;)
        {
+           appName=prefix+UUID.randomUUID().toString();
+           if(appName.length() > 64)
+           {
+               String truncated = appName.substring(0,63);
+               appName = truncated;
+           }
            if(false == appNames.contains(appName))
            {
                break;
-           }
-           else
-           {
-               appName+=counter++;
            }
        }
        return appName;

@@ -14,6 +14,7 @@ import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClientMgr;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -29,6 +30,11 @@ public class DateraRestClientMgrTests {
     private DateraUtil.DateraMetaData dtMetaData = null;
     private boolean dateraCleanup = true;
     
+    @Before
+    public void init()
+    {
+        dateraCleanup = true;
+    }
     @After
     public void cleanUp() {
         if(dateraCleanup)
@@ -403,12 +409,34 @@ public class DateraRestClientMgrTests {
         
         assertTrue(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData));
         assertTrue(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData));
-        
+    }
+    @Test
+    public void utTestAppInstanceNameLength()
+    {
+        dtMetaData = new DateraUtil.DateraMetaData();
+        dtMetaData.mangementIP = DateraCommon.MANAGEMENT_IP;
+        dtMetaData.managementPort = DateraCommon.PORT;
+        dtMetaData.managementUserName = DateraCommon.USERNAME;
+        dtMetaData.managementPassword = DateraCommon.PASSWORD;
+        dtMetaData.storagePoolName = "dummySP";
+        dtMetaData.replica = 3;
+        dtMetaData.networkPoolName = "default";
+        dtMetaData.appInstanceName = "";
+        dtMetaData.storageInstanceName = "storage-1";
+        dtMetaData.initiatorGroupName = "";
+        dtMetaData.clvmVolumeGroupName = "dummyCLVM";
+
+        String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,null);
+        dtMetaData.initiatorGroupName = initiatorGroupName;
         String suggestedAppName = "abcdefghijklmnopqrstuvwxyz_abcdefghijklmnopqrstuvwxyz_abcdefghijklmnopqrstuvwxyz";
         suggestedAppName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, suggestedAppName);
         assertTrue(suggestedAppName.length()>=3);
-        assertTrue(suggestedAppName.length()<=65);
-        dateraCleanup = true;
+        assertTrue(suggestedAppName.length()<=64);
+        dtMetaData.appInstanceName = suggestedAppName;
+        DateraRestClientMgr.getInstance().createVolume(rest, dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword, dtMetaData.appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES, 3, DateraCommon.DEFAULT_CAPACITY_IOPS);
+        DateraModel.AppModel suggestedAppInst = DateraRestClientMgr.getInstance().getAppInstanceInfo(rest, dtMetaData);
+        assertTrue(suggestedAppInst.name.equals(suggestedAppName));
+
     }
     @Test
     public void utTestExceptions()
@@ -547,6 +575,5 @@ public class DateraRestClientMgrTests {
             assertEquals(CloudRuntimeException.class, ex.getClass());
         }
 
-        dateraCleanup = true;
     }
 }

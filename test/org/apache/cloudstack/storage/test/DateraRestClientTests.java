@@ -46,7 +46,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 
 @RunWith(MockitoJUnitRunner.class)
-public class DateraRestClientTest {
+public class DateraRestClientTests {
 
     private String MANAGEMENT_IP = "172.19.175.170";
     private String USERNAME = "admin";
