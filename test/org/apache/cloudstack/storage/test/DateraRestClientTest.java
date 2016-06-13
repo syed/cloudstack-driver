@@ -153,6 +153,8 @@ public class DateraRestClientTest {
 		initiators.add("iqn.1994-05.com.xenserver:dc785c10806");
 
         List<String> inits = rest.registerInitiators(initiators);
+        //System.out.println(" LISt of oinits " + rest.getInitiators());
+        inits = rest.getInitiators();
         assertTrue(inits.contains("iqn.2005-03.org.open-iscsi:01cbe94a11") && inits.contains("iqn.1994-05.com.xenserver:dc785c10806"));
         String initGroupName = "test_initgroup_" + UUID.randomUUID().toString();
         assertTrue(rest.createInitiatorGroup(initGroupName, initiators));
