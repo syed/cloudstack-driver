@@ -3,6 +3,8 @@ package org.apache.cloudstack.storage.datastore.utils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
 import org.apache.log4j.Logger;
 
 import com.cloud.utils.exception.CloudRuntimeException;
@@ -310,6 +312,13 @@ public class DateraRestClientMgr {
        else
        {
            appName = "csApp";
+       }
+       
+       appName+=UUID.randomUUID().toString();
+       if(appName.length() > 65)
+       {
+           String truncated = appName.substring(0,65);
+           appName = truncated;
        }
        List<String> appNames = rest.enumerateAppInstances();
        int counter = 1;
