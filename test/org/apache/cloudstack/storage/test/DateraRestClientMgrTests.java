@@ -413,7 +413,8 @@ public class DateraRestClientMgrTests {
     @Test
     public void utTestAppInstanceNameLength()
     {
-        dtMetaData = new DateraUtil.DateraMetaData();
+        dateraCleanup = false;
+    	dtMetaData = new DateraUtil.DateraMetaData();
         dtMetaData.mangementIP = DateraCommon.MANAGEMENT_IP;
         dtMetaData.managementPort = DateraCommon.PORT;
         dtMetaData.managementUserName = DateraCommon.USERNAME;
@@ -436,7 +437,7 @@ public class DateraRestClientMgrTests {
         DateraRestClientMgr.getInstance().createVolume(rest, dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword, dtMetaData.appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES, 3, DateraCommon.DEFAULT_CAPACITY_IOPS);
         DateraModel.AppModel suggestedAppInst = DateraRestClientMgr.getInstance().getAppInstanceInfo(rest, dtMetaData);
         assertTrue(suggestedAppInst.name.equals(suggestedAppName));
-
+        DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData);
     }
     @Test
     public void utTestExceptions()
