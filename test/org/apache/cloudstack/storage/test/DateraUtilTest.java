@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
+import org.apache.cloudstack.storage.datastore.utils.DateraRestClientMgr;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 
 import org.junit.Test;

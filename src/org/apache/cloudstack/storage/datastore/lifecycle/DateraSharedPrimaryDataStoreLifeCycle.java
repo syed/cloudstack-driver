@@ -93,7 +93,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         Map<String, String> details = (Map<String, String>)dsInfos.get("details");
 
         if (podId == null) {
-            throw new CloudRuntimeException("The Pod ID must be specified.");
+            throw new CloudRuntimeException("Zone-wide scope is not supported by DateraShared provider");
         }
 
         if (clusterId == null) {

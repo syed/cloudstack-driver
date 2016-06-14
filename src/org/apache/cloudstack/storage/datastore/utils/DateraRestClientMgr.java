@@ -311,14 +311,14 @@ public class DateraRestClientMgr {
        }
        else
        {
-           appName = "csApp";
+           appName = "cloudstack-";
        }
        String prefix = appName;
 
        List<String> appNames = rest.enumerateAppInstances();
        for(;;)
        {
-           appName=prefix+UUID.randomUUID().toString();
+           appName = prefix + UUID.randomUUID().toString();
            if(appName.length() > 64)
            {
                String truncated = appName.substring(0,63);
@@ -328,9 +328,13 @@ public class DateraRestClientMgr {
            {
                break;
            }
+           else{
+               appName.concat(UUID.randomUUID().toString().substring(0, 2));
+           }
        }
        return appName;
     }
+
     public String generateInitiatorGroupName(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData,
             List<String> iqns, String preferredPrefix) {
 
