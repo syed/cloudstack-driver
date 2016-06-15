@@ -340,8 +340,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
                 primaryDataStoreInfo.getPodId(), primaryDataStoreInfo.getDataCenterId());
 
         if (allHosts.isEmpty()) {
-            _primaryDataStoreDao.expunge(primaryDataStoreInfo.getId());
             deleteDateraApplicationInstance(primaryDataStoreInfo.getId());
+            _primaryDataStoreDao.expunge(primaryDataStoreInfo.getId());
             throw new CloudRuntimeException("No host up to associate a storage pool with in cluster " + primaryDataStoreInfo.getClusterId());
         }
 
@@ -356,8 +356,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
 
         if (!success) {
-            _primaryDataStoreDao.expunge(primaryDataStoreInfo.getId());
             deleteDateraApplicationInstance(primaryDataStoreInfo.getId());
+            _primaryDataStoreDao.expunge(primaryDataStoreInfo.getId());
             throw new CloudRuntimeException("Unable to create storage in cluster " + primaryDataStoreInfo.getClusterId());
         }
 
@@ -376,8 +376,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         if (poolHosts.isEmpty()) {
             s_logger.warn("No host can access storage pool '" + primaryDataStoreInfo + "' on cluster '" + primaryDataStoreInfo.getClusterId() + "'.");
 
-            _primaryDataStoreDao.expunge(primaryDataStoreInfo.getId());
             deleteDateraApplicationInstance(primaryDataStoreInfo.getId());
+            _primaryDataStoreDao.expunge(primaryDataStoreInfo.getId());
             throw new CloudRuntimeException("Failed to access storage pool");
         }
 
@@ -420,8 +420,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         if (answer != null && answer.getResult()) {
             return true;
         } else {
-            _primaryDataStoreDao.expunge(storagePool.getId());
             deleteDateraApplicationInstance(storagePool.getId());
+            _primaryDataStoreDao.expunge(storagePool.getId());
 
             String msg = "";
 
@@ -554,8 +554,17 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
        return false;
     }
     private boolean deleteDateraApplicationInstance(long storagePoolId) {
-        DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
-        return DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(dtMetaData);
+        try
+        {
+            DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
+            return DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(dtMetaData);
+        }
+        catch(Exception ex)
+        {
+            //the cloudstack operation must continue even if the datera node delete does not succeed
+            s_logger.info(DateraUtil.LOG_PREFIX+"Could not delete the app instance, "+ex.getMessage());
+            return false;
+        }
     }
 
     private long getIopsValue(long storagePoolId, String iopsKey) {
