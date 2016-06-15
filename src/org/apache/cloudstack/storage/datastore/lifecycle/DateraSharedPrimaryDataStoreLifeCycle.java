@@ -102,7 +102,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             throw new CloudRuntimeException("Cluster must be specified");
         }
 
-        if (capacityBytes == null || capacityBytes <= 0 || capacityBytes < DateraUtil.MAX_CAPACITY_BYTES) {
+        if (capacityBytes == null || capacityBytes <= 0 || capacityBytes > DateraUtil.MAX_CAPACITY_BYTES) {
             throw new IllegalArgumentException("Capacity Bytes must be between " + ((DateraUtil.getVolumeSizeInGB(DateraUtil.MIN_CAPACITY_BYTES)/1024)+1)
                     + "GB (" + DateraUtil.MIN_CAPACITY_BYTES + " bytes) to " + DateraUtil.getVolumeSizeInGB(DateraUtil.MAX_CAPACITY_BYTES)/1024 + "TB ("
                     + DateraUtil.MAX_CAPACITY_BYTES + " bytes");
@@ -614,7 +614,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         if(newSize < storagePool.getCapacityBytes())
         {
-             throw new CloudRuntimeException("Cannot shrink the capacity bytes, from "+ storagePool.getCapacityBytes()+", to requested capacity bytes"+ newSize );
+            throw new CloudRuntimeException("DateraShared provider does not support shrinking from " + storagePool.getCapacityBytes() + ", to requested capacity bytes " + newSize);
         }
 
         if (newIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || newIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
