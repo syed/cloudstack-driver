@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
 import javax.inject.Inject;
 
 import org.apache.log4j.Logger;
@@ -97,11 +99,13 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
 
         if (clusterId == null) {
-            throw new CloudRuntimeException("The Cluster ID must be specified.");
+            throw new CloudRuntimeException("Cluster must be specified");
         }
 
         if (capacityBytes == null || capacityBytes <= 0) {
-            throw new IllegalArgumentException("'capacityBytes' must be present and greater than 0.");
+            throw new IllegalArgumentException("Capacity Bytes must be between " + ((DateraUtil.getVolumeSizeInGB(DateraUtil.MIN_CAPACITY_BYTES)/1024)+1)
+                    + "GB (" + DateraUtil.MIN_CAPACITY_BYTES + " bytes) to " + DateraUtil.getVolumeSizeInGB(DateraUtil.MAX_CAPACITY_BYTES)/1024 + "TB ("
+                    + DateraUtil.MAX_CAPACITY_BYTES + " bytes");
         }
 
         if (capacityIops == null || capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
@@ -195,11 +199,10 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         DateraRestClient rest= new DateraRestClient(managementVip, managementPort, managementUsername, managementPassword);
         DateraUtil.DateraMetaData dtMetaData = new DateraUtil.DateraMetaData(managementVip, managementPort, managementUsername, managementPassword, storagePoolName, replica, networkPoolName, appInstanceName, storageInstanceName,"" ,clvmVolumeGroupName);
 
+        String uuid = UUID.randomUUID().toString();
         if(isDateraSupported(hypervisorType))
         {
-            appInstanceName = storagePoolName;
-            appInstanceName.replace(" ", "");
-            appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, appInstanceName);
+            appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, uuid);
             validateHostsAvailability(clusterId);
             AppInstanceInfo.StorageInstance dtStorageInfo = DateraRestClientMgr.getInstance().createVolume(rest, managementVip, managementPort, managementUsername, managementPassword, appInstanceName, networkPoolName, capacityBytes, replica, capacityIops);
 
@@ -218,7 +221,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
         else
         {
-            iqn="iqn";
+            iqn = "iqn";
             storageVip = clvmVolumeGroupName;
             storagePath = clvmVolumeGroupName;
         }
@@ -228,7 +231,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
                 managementUsername, managementPassword, appInstanceName,
                 storageInstanceName, initiatorGroupName, initiators, _timeout);
 
-        parameters.setUuid(iqn);
+        parameters.setUuid(uuid);
 
         details.put(DateraUtil.MANAGEMENT_IP, managementVip);
         details.put(DateraUtil.MANAGEMENT_PORT, String.valueOf(managementPort));

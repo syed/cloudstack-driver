@@ -105,6 +105,8 @@ public class DateraUtil {
 
     private static final int DEFAULT_MANAGEMENT_PORT = 7718;
     public static final int DEFAULT_STORAGE_PORT = 3260;
+    public static final long MIN_CAPACITY_BYTES = 1073741824L;
+    public static final long MAX_CAPACITY_BYTES = 70368744177664L;
 
     public static final String VOLUME_SIZE_NAME = "dateraVolumeSize";
 

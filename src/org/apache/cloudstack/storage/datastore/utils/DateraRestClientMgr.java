@@ -3,7 +3,6 @@ package org.apache.cloudstack.storage.datastore.utils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.log4j.Logger;
 
@@ -304,35 +303,14 @@ public class DateraRestClientMgr {
             }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
-       String appName = "";
-       if(null != suggestedAppName)
-       {
-           appName = suggestedAppName;
-       }
-       else
-       {
-           appName = "cloudstack-";
-       }
-       String prefix = appName;
 
-       List<String> appNames = rest.enumerateAppInstances();
-       for(;;)
-       {
-           appName = prefix + UUID.randomUUID().toString();
-           if(appName.length() > 64)
-           {
-               String truncated = appName.substring(0,63);
-               appName = truncated;
-           }
-           if(false == appNames.contains(appName))
-           {
-               break;
-           }
-           else{
-               appName.concat(UUID.randomUUID().toString().substring(0, 2));
-           }
-       }
-       return appName;
+       String appInstName = "cloudstack-" + suggestedAppName;
+
+        List<String> appNames = rest.enumerateAppInstances();
+        if(appNames.contains(appInstName)) {
+            appInstName.concat("cs");
+        }
+        return appInstName;
     }
 
     public String generateInitiatorGroupName(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData,
