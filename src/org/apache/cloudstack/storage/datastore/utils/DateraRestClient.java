@@ -546,7 +546,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
   }
 
   String resp = execute(postRequest);
-  s_logger.info("DateraRestClient.doLogin response ="+resp);
+
   if(null == resp || resp.isEmpty())
   {
      throw new RuntimeException(DATERA_LOG_PREFIX+"No response from the datera node");
@@ -556,6 +556,7 @@ public List<String> registerInitiators(Map<String,String> initiators)
   {
     throw new RuntimeException(DATERA_LOG_PREFIX+"Authentication failure, "+error.message);
   }
+  s_logger.info("DateraRestClient.doLogin succeeded");
 
    respLogin = gson.fromJson(resp, LoginResponse.class);
 
