@@ -598,14 +598,15 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
 
         long newSize = capacityBytes != null ? capacityBytes : storagePool.getCapacityBytes();
+        long newIops = capacityIops != null ? capacityIops : storagePool.getCapacityIops();
 
         if(newSize < storagePool.getCapacityBytes())
         {
              throw new CloudRuntimeException("Cannot shrink the capacity bytes, from "+ storagePool.getCapacityBytes()+", to requested capacity bytes"+ newSize );
         }
 
-        if (capacityIops == null || capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
-            throw new IllegalArgumentException("'capacityIops' must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
+        if (newIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || newIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
+            throw new IllegalArgumentException("'CapacityIops' must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
         }
 
 
@@ -617,9 +618,9 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         {
             DateraRestClientMgr.getInstance().updatePrimaryStorageCapacityBytes(rest, dtMetaData, newSize);
         }
-        if(capacityIops != storagePool.getCapacityIops())
+        if(newIops != storagePool.getCapacityIops())
         {
-            DateraRestClientMgr.getInstance().updatePrimaryStorageIOPS(rest, dtMetaData, capacityIops);
+            DateraRestClientMgr.getInstance().updatePrimaryStorageIOPS(rest, dtMetaData, newIops);
         }
     }
 
