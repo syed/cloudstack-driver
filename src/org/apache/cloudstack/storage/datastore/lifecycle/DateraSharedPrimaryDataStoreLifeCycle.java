@@ -565,7 +565,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         catch(Exception ex)
         {
             //the cloudstack operation must continue even if the datera node delete does not succeed
-            s_logger.info(DateraUtil.LOG_PREFIX+"Could not delete the app instance, "+ex.getMessage());
+            s_logger.info(DateraUtil.LOG_PREFIX + "Could not delete the app instance, " + ex.getMessage());
             return false;
         }
     }
@@ -618,7 +618,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
 
         if (newIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || newIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
-            throw new IllegalArgumentException("'CapacityIops' must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
+            throw new IllegalArgumentException("Capacity IOPS must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
         }
 
 
