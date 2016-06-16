@@ -10,7 +10,8 @@ from marvin.lib.base import Account, ServiceOffering, User, StoragePool
 
 # common - commonly used methods for all tests are listed here
 from marvin.lib.common import (get_domain, get_zone,
-                               list_hosts, list_clusters)
+                               list_hosts, list_clusters,
+                               list_storage_pools)
 
 # utils - utility classes for common cleanup, external library wrappers, etc.
 from marvin.lib.utils import cleanup_resources
@@ -58,6 +59,10 @@ class TestData:
     hostName = "hostname"
 
     def __init__(self):
+        self.datera_url = (
+            "mgmtIP=172.19.175.170;mgmtPort=7718;" +
+            "mgmtUserName=admin;mgmtPassword=password;" +
+            "replica=3;networkPoolName=default"),
         self.testdata = {
             TestData.Datera: {
                 TestData.mvip: "172.19.175.170",
@@ -69,14 +74,14 @@ class TestData:
                 TestData.password: "maple"
             },
             TestData.account: {
-                "email": "test@test.com",
+                "email": "test@example.com",
                 "firstname": "John",
                 "lastname": "Doe",
                 TestData.username: "test",
                 TestData.password: "test"
             },
             TestData.user: {
-                "email": "user@test.com",
+                "email": "user@example.com",
                 "firstname": "Jane",
                 "lastname": "Doe",
                 TestData.username: "testuser",
@@ -85,10 +90,7 @@ class TestData:
             TestData.primaryStorage: {
                 TestData.name: "Datera-%d" % random.randint(0, 100),
                 TestData.scope: "CLUSTER",
-                TestData.url: (
-                    "mgmtIP=172.19.175.170;mgmtPort=7718;" +
-                    "mgmtUserName=admin;mgmtPassword=password;" +
-                    "replica=3;networkPoolName=default"),
+                TestData.url: self.datera_url[0],
                 TestData.provider: "DateraShared",
                 TestData.tags: TestData.storageTag,
                 TestData.capacityIops: 5000,
@@ -115,8 +117,8 @@ class TestData:
             TestData.clusterId: 1,
             TestData.domainId: 1,
             TestData.url: "172.19.175.174",
-            TestData.clusterName: "Cluster-Xen",
-            TestData.hostName: "tlx175"
+            TestData.clusterName: "cluster-tlx176",
+            TestData.hostName: "tlx176"
 
         }
 
@@ -181,7 +183,7 @@ class TestPrimaryStorage(cloudstackTestCase):
 
         primarystorage = cls.testdata[TestData.primaryStorage]
 
-        primary_storage = StoragePool.create(
+        cls.primary_storage = StoragePool.create(
             cls.apiClient,
             primarystorage,
             scope=primarystorage[TestData.scope],
@@ -193,8 +195,8 @@ class TestPrimaryStorage(cloudstackTestCase):
             capacitybytes=primarystorage[TestData.capacityBytes],
             hypervisor=primarystorage[TestData.hypervisor]
         )
-
-        cls._primary_storage = [primary_storage]
+        cls.primary_storage_id = cls.primary_storage.id
+        cls._primary_storage = [cls.primary_storage]
 
     @classmethod
     def tearDownClass(cls):
@@ -210,11 +212,38 @@ class TestPrimaryStorage(cloudstackTestCase):
         pass
 
     def test_delete_primary_storage_1(self):
-        primarystorage = self.testdata[TestData.primaryStorage]
         cleanup_resources(self.apiClient, self._primary_storage)
 
+        # Verify in Datera
         flag = 0
+        datera_primary_storage_name = "cloudstack-" + self.primary_storage_id
         for item in self.datera_api.app_instances.list():
-            if item['name'] == primarystorage[TestData.name]:
+            if item['name'] == datera_primary_storage_name:
                 flag = 1
         self.assertEqual(flag, 0, "app instance not deleted.")
+
+        # Verify in Cloudstack
+        storage_pools_response = list_storage_pools(
+            self.apiClient, clusterid=self.cluster.id)
+        for storage in storage_pools_response:
+            self.assertNotEqual(
+                storage.id,
+                self.primary_storage_id,
+                "Primary storage not deleted")
+
+        # Verify in xenserver
+        for key, value in self.xen_session.xenapi.SR.get_all_records().items():
+            self.assertNotEqual(
+                value['name_description'],
+                self.primary_storage_id,
+                "SR not deleted in xenserver")
+
+        # Verify in sql database
+        command = "select uuid from storage_pool"
+        sql_result = self.dbConnection.execute(command)
+        key = 0
+        for uuid in sql_result:
+            if uuid[0] == self.primary_storage_id:
+                key = 1
+        self.assertEqual(
+            key, 0, "Primary storage not deleted in database")

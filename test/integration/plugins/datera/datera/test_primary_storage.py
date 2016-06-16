@@ -59,6 +59,10 @@ class TestData:
     hostName = "hostname"
 
     def __init__(self):
+        self.datear_url = (
+            "mgmtIP=172.19.175.170;mgmtPort=7718;" +
+            "mgmtUserName=admin;mgmtPassword=password;" +
+            "replica=3;networkPoolName=default"),
         self.testdata = {
             TestData.Datera: {
                 TestData.mvip: "172.19.175.170",
@@ -70,14 +74,14 @@ class TestData:
                 TestData.password: "maple"
             },
             TestData.account: {
-                "email": "test@test.com",
+                "email": "test@example.com",
                 "firstname": "John",
                 "lastname": "Doe",
                 TestData.username: "test",
                 TestData.password: "test"
             },
             TestData.user: {
-                "email": "user@test.com",
+                "email": "user@example.com",
                 "firstname": "Jane",
                 "lastname": "Doe",
                 TestData.username: "testuser",
@@ -86,10 +90,7 @@ class TestData:
             TestData.primaryStorage: {
                 TestData.name: "datera-%d" % random.randint(0, 100),
                 TestData.scope: "CLUSTER",
-                TestData.url: (
-                    "mgmtIP=172.19.175.170;mgmtPort=7718;" +
-                    "mgmtUserName=admin;mgmtPassword=password;" +
-                    "replica=3;networkPoolName=default"),
+                TestData.url: self.datear_url[0],
                 TestData.provider: "DateraShared",
                 TestData.tags: TestData.storageTag,
                 TestData.capacityIops: 5000,
@@ -100,11 +101,7 @@ class TestData:
             TestData.primaryStorage2: {
                 TestData.name: "Datera-%d" % random.randint(0, 100),
                 TestData.scope: "CLUSTER",
-                TestData.url: (
-                    "mgmtIP=172.19.175.170;mgmtPort=7718;" +
-                    "mgmtUserName=admin;mgmtPassword=password;" +
-                    "replica=3;networkPoolName=default"),
-
+                TestData.url: self.datear_url[0],
                 TestData.provider: "DateraShared",
                 TestData.tags: TestData.storageTag,
                 TestData.capacityIops: 5000,
@@ -132,8 +129,8 @@ class TestData:
             TestData.clusterId: 1,
             TestData.domainId: 1,
             TestData.url: "172.19.175.174",
-            TestData.clusterName: "Cluster-Xen",
-            TestData.hostName: "tlx175"
+            TestData.clusterName: "cluster-tlx176",
+            TestData.hostName: "tlx176"
         }
 
 
@@ -240,16 +237,15 @@ class TestPrimaryStorage(cloudstackTestCase):
         )
 
         self.cleanup.append(primary_storage)
-
+        primary_storage_name = "cloudstack-" + primary_storage.id
         self.assertEqual(
-            any(primarystorage[TestData.name] == app_instance['name']
+            any(primary_storage_name == app_instance['name']
                 for app_instance in self.datera_api.app_instances.list()),
             True, "app instance not created")
         primary_storage_url = primarystorage[TestData.url]
 
         self._verify_attributes(
-            primary_storage.id, primarystorage[TestData.name],
-            primary_storage_url)
+            primary_storage.id, primary_storage_url)
 
     def test_primary_storage_2(self):
         primarystorage2 = self.testdata[TestData.primaryStorage2]
@@ -268,34 +264,43 @@ class TestPrimaryStorage(cloudstackTestCase):
         )
 
         self.cleanup.append(primary_storage2)
-
+        primary_storage_name = "cloudstack-" + primary_storage2.id
         self.assertEqual(
-            any(primarystorage2[TestData.name] == app_instance['name']
+            any(primary_storage_name == app_instance['name']
                 for app_instance in self.datera_api.app_instances.list()),
             True, "app instance not created")
 
         primary_storage_url = primarystorage2[TestData.url]
 
         self._verify_attributes(
-            primary_storage2.id, primarystorage2[TestData.name],
-            primary_storage_url)
+            primary_storage2.id, primary_storage_url)
 
-    def _verify_attributes(self, primary_storage_id, primarystorage_name,
-                           primary_storage_url):
+    def _verify_attributes(self, primarystorage_id, primary_storage_url):
         #Cloudstack Primary storage pool
         storage_pools_response = list_storage_pools(
-            self.apiClient, id=primary_storage_id)
+            self.apiClient, id=primarystorage_id)
         storage_pools_response = storage_pools_response[0]
         storage_pools_response_type = storage_pools_response.type
-        storage_pools_response_iqn = storage_pools_response.id
+        storage_pools_response_iqn = storage_pools_response.path
         storage_pools_response_disk = storage_pools_response.disksizetotal
         storage_pools_response_ipaddress = storage_pools_response.ipaddress
         storage_pools_response_state = storage_pools_response.state
         storage_pools_response_iops = storage_pools_response.capacityiops
 
+        # Verify in sql database
+        command = (
+            "select status from storage_pool where uuid='" +
+            primarystorage_id + "'")
+        sql_result = self.dbConnection.execute(command)
+
+        self.assertEqual(
+            sql_result[0][0], 'Up',
+            "Priamry storage not added in database")
+
         # Datera app instances
+        datera_primarystorage_name = "cloudstack-" + primarystorage_id
         for instance in self.datera_api.app_instances.list():
-            if instance['name'] == primarystorage_name:
+            if instance['name'] == datera_primarystorage_name:
                 app_instance_response = instance
         app_instance_response_iqn = (
             app_instance_response['storage_instances']
@@ -322,10 +327,10 @@ class TestPrimaryStorage(cloudstackTestCase):
 
         # xen server details
         for key, value in self.xen_session.xenapi.SR.get_all_records().items():
-            if value['name_label'] == app_instance_response_iqn:
+            if value['name_description'] == primarystorage_id:
                 xen_server_response = value
 
-        xen_server_response_iqn = xen_server_response['name_label']
+        #xen_server_response_iqn = xen_server_response['name_description']
         xen_server_response_type = xen_server_response['type']
 
         self.assertEqual(
@@ -336,9 +341,10 @@ class TestPrimaryStorage(cloudstackTestCase):
             xen_server_response_type, "lvmoiscsi",
             "Failed to craete lvmoiscsi on xen server")
 
-        if ((xen_server_response_iqn != app_instance_response_iqn) or
-                (app_instance_response_iqn != storage_pools_response_iqn)):
-            self.assert_(False, "iqn IDs are different")
+        self.assertEqual(
+            storage_pools_response_iqn.split("/")[1],
+            app_instance_response_iqn,
+            "Iqn values mismatch")
 
         self.assertEqual(
             app_instance_response_disk,
