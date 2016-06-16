@@ -410,6 +410,8 @@ public class DateraRestClientMgrTests {
         assertTrue(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData));
         assertTrue(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData));
     }
+/*  
+    // Commenting this test case because current driver is using uuid to create the app instance
     @Test
     public void utTestAppInstanceNameLength()
     {
@@ -438,7 +440,7 @@ public class DateraRestClientMgrTests {
         DateraModel.AppModel suggestedAppInst = DateraRestClientMgr.getInstance().getAppInstanceInfo(rest, dtMetaData);
         assertTrue(suggestedAppInst.name.equals(suggestedAppName));
         DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData);
-    }
+    }*/
     @Test
     public void utTestExceptions()
     {

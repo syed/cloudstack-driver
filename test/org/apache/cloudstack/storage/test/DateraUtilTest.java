@@ -56,47 +56,59 @@ public class DateraUtilTest {
     	assertTrue(DateraUtil.getValue(DateraUtil.CLVM_VOLUME_GROUP_NAME, url).equals("vg   2"));
     	assertTrue(DateraUtil.getValue(DateraUtil.APP_NAME, url).equals("xen1"));
     	assertTrue(DateraUtil.getValue(DateraUtil.STORAGE_NAME, url).equals("storage-1"));
+    	
+    	String url1 = "mgmtIP=172.19.175.170;mgmtPort=7718;mgmtUserName=admin;"
+    			+ "mgmtPassword=password;"
+    			+ "replica = 3;datacenter=dummy1;volumeGroupName=vg2;appName=xen1;storageName=storage-1;";
+
+    	
+    	assertTrue(DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url1).equals("default"));
     }
 	
 	@Test
-	public void testGetNewHostIqn() {
-	   String[] curIqns = {DateraCommon.INITIATOR_1, DateraCommon.INITIATOR_2};
-	   String[] newIqns = {DateraCommon.INITIATOR_3, DateraCommon.INITIATOR_4};
-	   String [] updatedIqns = DateraUtil.getNewHostIqns(curIqns, newIqns);
-	   int count = 0;
+	public void testGetManagementIP() {
+		String url = "mgmtIP=172.19.175.170;mgmtPort=7718;mgmtUserName=admin;mgmtPassword= password;replica = 3;     " + 
+    			"networkPoolName=default;datacenter=dummy1;volumeGroupName=vg2;appName=xen1;storageName=storage-1;";
 
-	   for (String iqn : updatedIqns) {
-           for (String curIqn : curIqns){
-        	   if (iqn.equals(curIqn)){
-        	       count += 1;
-        	   }
-           }
-           for (String newIqn : newIqns){
-        	   if (iqn.equals(newIqn)) {
-        		   count += 1;
-        	   }
-           }
-	   }
-	   assertEquals(count, 4);	
+		String ip = DateraUtil.getManagementIP(url);
+		assertEquals(ip, "172.19.175.170");
 	}
 	
 	@Test
-	public void testGetNewVolumeIds() {
+	public void testGetManagementPort() {
+		String url = "mgmtIP=172.19.175.170;mgmtPort=7718;mgmtUserName=admin;mgmtPassword= password;replica = 3;     " + 
+    			"networkPoolName=default;datacenter=dummy1;volumeGroupName=vg2;appName=xen1;storageName=storage-1;";
+		int port = DateraUtil.getManagementPort(url);
+		assertEquals(port, 7718);
+	}
+	
+	@Test
+	public void testConstructInitiatorName() {
+		String expected = "/initiators/iqn.org-1940.1234-jfi-nmkf8e-erc";
+		String iqn = DateraUtil.constructInitiatorName("iqn.org-1940.1234-jfi-nmkf8e-erc");
+		assertEquals(expected, iqn);
+	}
+	
+	@Test
+	public void testConstructVolumeName() {
+		String expected = "volume-0";
+		String volume = DateraUtil.constructVolumeName("0");
+		assertEquals(expected, volume);
+	}
+	
+	@Test
+	public void testGenerateInitiatorGroupName() {
+		String expected = "csIG_app_inst";
+		String initName = DateraUtil.generateInitiatorGroupName("app_inst");
+		assertEquals(expected, initName);
+	}
+	
+	@Test
+	public void testGetReplica() {
+		String url = "mgmtIP=172.19.175.170;mgmtPort=7718;mgmtUserName=admin;mgmtPassword= password;replica = 3;     " + 
+    			"networkPoolName=default;datacenter=dummy1;volumeGroupName=vg2;appName=xen1;storageName=storage-1;";
 		
-		long[] volumeIds = {1L, 2L, 3L};
-		boolean added = false;
-		boolean deleted = false;
-		
-		long[] updatedVolumeIds = DateraUtil.getNewVolumeIds(volumeIds, 5L, true);
-		for (long ids : updatedVolumeIds) {
-            if(ids == 5L) added = true;
-		}
-		
-		updatedVolumeIds = DateraUtil.getNewVolumeIds(volumeIds, 2L, false);
-		for (long ids : updatedVolumeIds) {
-            if(ids == 2L) deleted = true;
-		}
-		assertTrue(added);
-		assertFalse(deleted);
+		int replica = DateraUtil.getReplica(url);
+		assertEquals(replica, 3);
 	}
 }
