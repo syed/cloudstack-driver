@@ -317,16 +317,17 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         if (HypervisorType.XenServer.equals(hypervisorType)) {
             return StoragePoolType.IscsiLUN;
         }
+/*
         if(HypervisorType.KVM.equals(hypervisorType))
         {
             return StoragePoolType.CLVM;
         }
-/*
+
         if (HypervisorType.VMware.equals(hypervisorType)) {
             return StoragePoolType.VMFS;
         }
 */
-        throw new CloudRuntimeException("The 'hypervisor' parameter must be '" + HypervisorType.XenServer + "' or '" + HypervisorType.KVM + "'.");
+        throw new CloudRuntimeException("The 'hypervisor' parameter must be '" + HypervisorType.XenServer + "'.");
     }
 
     @Override
