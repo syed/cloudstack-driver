@@ -635,11 +635,13 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         if(newSize != storagePool.getCapacityIops())
         {
-            DateraRestClientMgr.getInstance().updatePrimaryStorageCapacityBytes(rest, dtMetaData, newSize);
+            if(false == DateraRestClientMgr.getInstance().updatePrimaryStorageCapacityBytes(rest, dtMetaData, newSize))
+                throw new CloudRuntimeException("Could not update storage capacity bytes");
         }
         if(newIops != storagePool.getCapacityIops())
         {
-            DateraRestClientMgr.getInstance().updatePrimaryStorageIOPS(rest, dtMetaData, newIops);
+            if(false == DateraRestClientMgr.getInstance().updatePrimaryStorageIOPS(rest, dtMetaData, newIops))
+                throw new CloudRuntimeException("Could not update storage IOPS");
         }
     }
 
