@@ -625,8 +625,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             throw new CloudRuntimeException("DateraShared provider does not support shrinking from " + storagePool.getCapacityBytes() + ", to requested capacity bytes " + newSize);
         }
 
-        if (newIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || newIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
-            throw new IllegalArgumentException("Capacity IOPS must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
+        if (newIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || (newIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME && newIops != 0)) {
+            throw new IllegalArgumentException("Capacity IOPS must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME + " or 0");
         }
 
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
