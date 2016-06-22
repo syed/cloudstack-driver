@@ -10,6 +10,7 @@ import javax.inject.Inject;
 
 import org.apache.log4j.Logger;
 import org.apache.cloudstack.engine.subsystem.api.storage.ClusterScope;
+import org.apache.cloudstack.engine.subsystem.api.storage.CreateCmdResult;
 import org.apache.cloudstack.engine.subsystem.api.storage.DataStore;
 import org.apache.cloudstack.engine.subsystem.api.storage.HostScope;
 import org.apache.cloudstack.engine.subsystem.api.storage.PrimaryDataStoreInfo;
@@ -30,6 +31,7 @@ import com.cloud.agent.AgentManager;
 import com.cloud.agent.api.Answer;
 import com.cloud.agent.api.CreateStoragePoolCommand;
 import com.cloud.agent.api.DeleteStoragePoolCommand;
+import com.cloud.agent.api.ModifyStoragePoolCommand;
 import com.cloud.agent.api.StoragePoolInfo;
 import com.cloud.dc.ClusterDetailsDao;
 import com.cloud.dc.ClusterVO;
@@ -437,7 +439,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
             s_logger.warn(msg);
 
-            throw new CloudRuntimeException(msg);
+            return false;
         }
     }
 
@@ -621,7 +623,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         if (newIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || newIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
             throw new IllegalArgumentException("Capacity IOPS must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
         }
-
 
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
