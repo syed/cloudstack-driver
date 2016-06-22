@@ -208,7 +208,7 @@ public class DateraUtil {
             value = Integer.parseInt(DateraUtil.getValue(key, url));
 
         }catch (NumberFormatException ex) {
-            throw new IllegalArgumentException("Invalid URL format ("+key+" is not an integer)");
+            throw new IllegalArgumentException("Invalid URL format (" + key + " is not an integer)");
         }
         return value;
     }

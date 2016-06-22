@@ -33,15 +33,19 @@ import java.util.UUID;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraRestClientMgr;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
-
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DateraUtilTest {
 	
-	@Test
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
+	@Test(expected=RuntimeException.class)
     public void testValidateUrl(){
     	String url = "  mgmtIP   =       172.19.175.170;   mgmtPort=7718     ;mgmtUserName=admin;mgmtPassword=  password;replica = 3;     " + 
     			"networkPoolName=default   ; datacenter   =  dummy1; volumeGroupName=  vg   2; appName=xen1;storageName=storage-1;";
@@ -63,6 +67,9 @@ public class DateraUtilTest {
 
     	
     	assertTrue(DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url1).equals("default"));
+    	DateraUtil.getValue("invalidKey", url1);
+    	DateraUtil.getValue(DateraUtil.CLVM_VOLUME_GROUP_NAME, url1);
+    	DateraUtil.getValue(DateraUtil.NETWORK_POOL_NAME, url1);
     }
 	
 	@Test
@@ -74,12 +81,16 @@ public class DateraUtilTest {
 		assertEquals(ip, "172.19.175.170");
 	}
 	
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testGetManagementPort() {
 		String url = "mgmtIP=172.19.175.170;mgmtPort=7718;mgmtUserName=admin;mgmtPassword= password;replica = 3;     " + 
     			"networkPoolName=default;datacenter=dummy1;volumeGroupName=vg2;appName=xen1;storageName=storage-1;";
 		int port = DateraUtil.getManagementPort(url);
 		assertEquals(port, 7718);
+
+		String url1 = "mgmtIP=172.19.175.170;mgmtPort=invalidPort;mgmtUserName=admin;mgmtPassword= password;replica = 3;     " + 
+    			"networkPoolName=default;datacenter=dummy1;volumeGroupName=vg2;appName=xen1;storageName=storage-1;";
+        DateraUtil.getManagementPort(url1);
 	}
 	
 	@Test
@@ -103,12 +114,16 @@ public class DateraUtilTest {
 		assertEquals(expected, initName);
 	}
 	
-	@Test
+	@Test(expected=IllegalArgumentException.class)
 	public void testGetReplica() {
 		String url = "mgmtIP=172.19.175.170;mgmtPort=7718;mgmtUserName=admin;mgmtPassword= password;replica = 3;     " + 
     			"networkPoolName=default;datacenter=dummy1;volumeGroupName=vg2;appName=xen1;storageName=storage-1;";
 		
 		int replica = DateraUtil.getReplica(url);
-		assertEquals(replica, 3);
+	    assertEquals(replica, 3);
+	    
+	    String url1 = "mgmtIP=172.19.175.170;mgmtPort=7718;mgmtUserName=admin;mgmtPassword= password;replica = oo;" + 
+    			"networkPoolName=default;datacenter=dummy1;volumeGroupName=vg2;appName=xen1;storageName=storage-1;";
+        DateraUtil.getReplica(url1);
 	}
 }
