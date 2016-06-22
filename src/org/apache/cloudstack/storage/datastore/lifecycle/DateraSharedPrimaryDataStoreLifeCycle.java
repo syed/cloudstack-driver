@@ -10,7 +10,6 @@ import javax.inject.Inject;
 
 import org.apache.log4j.Logger;
 import org.apache.cloudstack.engine.subsystem.api.storage.ClusterScope;
-import org.apache.cloudstack.engine.subsystem.api.storage.CreateCmdResult;
 import org.apache.cloudstack.engine.subsystem.api.storage.DataStore;
 import org.apache.cloudstack.engine.subsystem.api.storage.HostScope;
 import org.apache.cloudstack.engine.subsystem.api.storage.PrimaryDataStoreInfo;
@@ -31,7 +30,6 @@ import com.cloud.agent.AgentManager;
 import com.cloud.agent.api.Answer;
 import com.cloud.agent.api.CreateStoragePoolCommand;
 import com.cloud.agent.api.DeleteStoragePoolCommand;
-import com.cloud.agent.api.ModifyStoragePoolCommand;
 import com.cloud.agent.api.StoragePoolInfo;
 import com.cloud.dc.ClusterDetailsDao;
 import com.cloud.dc.ClusterVO;
@@ -451,23 +449,30 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
     @Override
     public boolean maintain(DataStore dataStore) {
+        StoragePool storagePool = (StoragePool)dataStore;
+        DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
+        if(false == DateraRestClientMgr.getInstance().setAdminState(null, dtMetaData, false))
+        {
+            throw new CloudRuntimeException("Could not set datera storage to offline mode");
+        }
+
         _storagePoolAutomation.maintain(dataStore);
         _primaryDataStoreHelper.maintain(dataStore);
 
-        StoragePool storagePool = (StoragePool)dataStore;
-        DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
-        DateraRestClientMgr.getInstance().setAdminState(null, dtMetaData, false);
         return true;
     }
 
     @Override
     public boolean cancelMaintain(DataStore store) {
-        _primaryDataStoreHelper.cancelMaintain(store);
-        _storagePoolAutomation.cancelMaintain(store);
-
         StoragePool storagePool = (StoragePool)store;
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
-        DateraRestClientMgr.getInstance().setAdminState(null, dtMetaData, true);
+        if(false == DateraRestClientMgr.getInstance().setAdminState(null, dtMetaData, true))
+        {
+            throw new CloudRuntimeException("Could not set datera storage to online mode");
+        }
+
+        _primaryDataStoreHelper.cancelMaintain(store);
+        _storagePoolAutomation.cancelMaintain(store);
 
         return true;
     }
