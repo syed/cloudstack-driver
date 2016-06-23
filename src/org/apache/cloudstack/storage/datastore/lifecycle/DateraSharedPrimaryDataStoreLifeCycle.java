@@ -108,7 +108,11 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
                     + DateraUtil.MAX_CAPACITY_BYTES + " bytes");
         }
 
-        if (capacityIops == null || capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME) {
+        if(capacityIops == null) {
+            capacityIops = 0L;
+        }
+
+        if (capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || (capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME && capacityIops != 0)) {
             throw new IllegalArgumentException("'Capacity IOPS' must be between " + DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and " + DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
         }
 
