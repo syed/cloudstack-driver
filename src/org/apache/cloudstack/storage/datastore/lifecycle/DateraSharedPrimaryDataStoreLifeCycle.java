@@ -552,8 +552,10 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             //unregister the initiators or remove the initiator group
         }
 
-        if(isDateraSupported(hypervisorType))
+        if(isDateraSupported(hypervisorType)) {
+            // The CloudStack operation must continue even of the Datera Side operation does not succeed
             deleteDateraApplicationInstance(storagePool.getId());
+        }
 
         return _primaryDataStoreHelper.deletePrimaryDataStore(dataStore);
     }
@@ -564,18 +566,32 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
           return true;
        return false;
     }
+
     private boolean deleteDateraApplicationInstance(long storagePoolId) {
         try
         {
+
             DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
-            return DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(dtMetaData);
+
+            DateraRestClient rest = null;
+            if(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData)) {
+                s_logger.info(DateraUtil.LOG_PREFIX + " Successfully deleted the App instance");
+            } else {
+                s_logger.error(DateraUtil.LOG_PREFIX + " Could not delete the App instance");
+            }
+
+            if(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData)){
+                s_logger.info(DateraUtil.LOG_PREFIX  + " Successfully deleted the initiator group");
+            } else {
+                s_logger.error(DateraUtil.LOG_PREFIX  + " Could not delete the initiator group");
+            }
         }
         catch(Exception ex)
         {
-            //the cloudstack operation must continue even if the datera node delete does not succeed
-            s_logger.info(DateraUtil.LOG_PREFIX + "Could not delete the app instance, " + ex.getMessage());
+            s_logger.error(DateraUtil.LOG_PREFIX + " Error while deleting App instance and initiator group : " + ex.getMessage());
             return false;
         }
+        return true;
     }
 
     private long getIopsValue(long storagePoolId, String iopsKey) {

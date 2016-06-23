@@ -140,7 +140,8 @@ public class DateraRestClientMgr {
             }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
-        rest.setAdminState(dtMetaData.appInstanceName, false);
+        // commenting setAdminState() call, because enable maintenance mode has already called this
+        //rest.setAdminState(dtMetaData.appInstanceName, false);
         return rest.deleteAppInstance(dtMetaData.appInstanceName);
     }
 
@@ -163,6 +164,7 @@ public class DateraRestClientMgr {
         }
         return rest.deleteInitiatorGroup(dtMetaData.initiatorGroupName);
     }
+
     public boolean deleteAppInstanceAndInitiatorGroup(DateraUtil.DateraMetaData dtMetaData)
     {
         DateraRestClient rest = null;

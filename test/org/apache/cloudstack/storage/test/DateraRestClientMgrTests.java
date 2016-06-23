@@ -309,10 +309,9 @@ public class DateraRestClientMgrTests {
         dateraCleanup = false;
         DateraRestClientMgr.getInstance().setAllowThrowException(false);
         assertFalse(DateraRestClientMgr.getInstance().isAllowThrowException());
-        
+        assertEquals(false, DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(null));
         assertEquals(false, DateraRestClientMgr.getInstance().deleteAppInstance(null, null));
         assertEquals(false, DateraRestClientMgr.getInstance().deleteInitiatorGroup(null, null));
-        assertEquals(false, DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(null));
         assertEquals(false, DateraRestClientMgr.getInstance().updatePrimaryStorageCapacityBytes(null,null,10000));
         assertEquals(false, DateraRestClientMgr.getInstance().updatePrimaryStorageIOPS(null,null,10000));
         assertEquals(null, DateraRestClientMgr.getInstance().getStorageInfo(null,null));
@@ -458,7 +457,6 @@ public class DateraRestClientMgrTests {
         {
             assertEquals(CloudRuntimeException.class, ex.getClass());
         }
-
         try
         {
             DateraRestClientMgr.getInstance().deleteInitiatorGroup(null, null);
@@ -467,16 +465,14 @@ public class DateraRestClientMgrTests {
         {
             assertEquals(CloudRuntimeException.class, ex.getClass());
         }
-
         try
         {
-           DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(null);
+            DateraRestClientMgr.getInstance().deleteAppInstanceAndInitiatorGroup(null);
         }
         catch(Exception ex)
         {
             assertEquals(CloudRuntimeException.class, ex.getClass());
         }
-
         try
         {
             DateraRestClientMgr.getInstance().updatePrimaryStorageCapacityBytes(null,null,10000);
