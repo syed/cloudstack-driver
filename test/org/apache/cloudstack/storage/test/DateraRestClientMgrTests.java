@@ -617,15 +617,10 @@ public class DateraRestClientMgrTests {
         iqns3.add(DateraCommon.INITIATOR_5);
         DateraRestClientMgr.getInstance().createInitiatorGroup(rest, dtMetaData, groupName3, iqns3);
 
-        Set<String> allInitiators = new HashSet<String>();
-        List<DateraModel.InitiatorGroup> initiatorGroups = null;
+        List<String> allInitiators = new ArrayList<String>();
 
-        initiatorGroups = DateraRestClientMgr.getInstance().enumerateInitiatorGroup(rest, dtMetaData);
-        for(DateraModel.InitiatorGroup iter : initiatorGroups)
-        {
-            allInitiators.addAll(iter.members);
-        }
-        allInitiators = extractOnlyInitiators(allInitiators);
+        allInitiators = DateraRestClientMgr.getInstance().enumerateInitiatorNames(rest, dtMetaData);
+
         assertTrue(allInitiators.contains(DateraCommon.INITIATOR_1));
         assertTrue(allInitiators.contains(DateraCommon.INITIATOR_2));
         assertTrue(allInitiators.contains(DateraCommon.INITIATOR_3));
@@ -633,15 +628,14 @@ public class DateraRestClientMgrTests {
         assertTrue(allInitiators.contains(DateraCommon.INITIATOR_5));
         allInitiators.clear();
 
+        List<String> currentInitiators = new ArrayList<String>();
 //delete the group
         dtMetaData.initiatorGroupName = groupName3;
+        currentInitiators = DateraRestClientMgr.getInstance().getInitiatorGroupMembers(rest, dtMetaData);
         DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData);
-        initiatorGroups = DateraRestClientMgr.getInstance().enumerateInitiatorGroup(rest, dtMetaData);
-        for(DateraModel.InitiatorGroup iter : initiatorGroups)
-        {
-            allInitiators.addAll(iter.members);
-        }
-        allInitiators = extractOnlyInitiators(allInitiators);
+        DateraRestClientMgr.getInstance().unregisterInitiators(rest, dtMetaData, currentInitiators);
+        allInitiators = DateraRestClientMgr.getInstance().enumerateInitiatorNames(rest, dtMetaData);
+
         assertTrue(allInitiators.contains(DateraCommon.INITIATOR_1));
         assertTrue(allInitiators.contains(DateraCommon.INITIATOR_2));
         assertTrue(allInitiators.contains(DateraCommon.INITIATOR_3));
@@ -650,13 +644,11 @@ public class DateraRestClientMgrTests {
         allInitiators.clear();
 //delete the group
         dtMetaData.initiatorGroupName = groupName2;
+        currentInitiators = DateraRestClientMgr.getInstance().getInitiatorGroupMembers(rest, dtMetaData);
         DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData);
-        initiatorGroups = DateraRestClientMgr.getInstance().enumerateInitiatorGroup(rest, dtMetaData);
-        for(DateraModel.InitiatorGroup iter : initiatorGroups)
-        {
-            allInitiators.addAll(iter.members);
-        }
-        allInitiators = extractOnlyInitiators(allInitiators);
+        DateraRestClientMgr.getInstance().unregisterInitiators(rest, dtMetaData, currentInitiators);
+        allInitiators = DateraRestClientMgr.getInstance().enumerateInitiatorNames(rest, dtMetaData);
+
         assertTrue(allInitiators.contains(DateraCommon.INITIATOR_1));
         assertFalse(allInitiators.contains(DateraCommon.INITIATOR_2));
         assertFalse(allInitiators.contains(DateraCommon.INITIATOR_3));
@@ -667,13 +659,11 @@ public class DateraRestClientMgrTests {
 
 //delete the group
         dtMetaData.initiatorGroupName = groupName1;
+        currentInitiators = DateraRestClientMgr.getInstance().getInitiatorGroupMembers(rest, dtMetaData);
         DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData);
-        initiatorGroups = DateraRestClientMgr.getInstance().enumerateInitiatorGroup(rest, dtMetaData);
-        for(DateraModel.InitiatorGroup iter : initiatorGroups)
-        {
-            allInitiators.addAll(iter.members);
-        }
-        allInitiators = extractOnlyInitiators(allInitiators);
+        DateraRestClientMgr.getInstance().unregisterInitiators(rest, dtMetaData, currentInitiators);
+        allInitiators = DateraRestClientMgr.getInstance().enumerateInitiatorNames(rest, dtMetaData);
+
         assertFalse(allInitiators.contains(DateraCommon.INITIATOR_1));
         assertFalse(allInitiators.contains(DateraCommon.INITIATOR_2));
         assertFalse(allInitiators.contains(DateraCommon.INITIATOR_3));

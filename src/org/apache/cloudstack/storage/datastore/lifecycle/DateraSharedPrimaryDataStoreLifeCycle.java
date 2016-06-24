@@ -50,6 +50,7 @@ import com.cloud.storage.dao.StoragePoolHostDao;
 import com.cloud.template.TemplateManager;
 import com.cloud.user.AccountDetailsDao;
 import com.cloud.user.dao.AccountDao;
+import com.cloud.utils.db.GlobalLock;
 import com.cloud.utils.exception.CloudRuntimeException;
 
 public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycle {
@@ -231,10 +232,33 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
         String initiatorGroupName = DateraUtil.generateInitiatorGroupName(appInstanceName);
         Map<String, String> initiators = extractInitiators(clusterId);
-        DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, managementVip, managementPort,
-                managementUsername, managementPassword, appInstanceName,
-                storageInstanceName, initiatorGroupName, initiators, _timeout);
 
+        ClusterVO cluster = _clusterDao.findById(clusterId);
+        GlobalLock lock = GlobalLock.getInternLock(cluster.getUuid());
+
+        if(!lock.lock(DateraUtil.LOCK_TIME_IN_SECOND)){
+            String err = DateraUtil.LOG_PREFIX+"Could not lock on : "+cluster.getUuid();
+            DateraRestClientMgr.getInstance().setAdminState(rest, dtMetaData, false);
+            DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData);
+
+            throw new CloudRuntimeException(err);
+        }
+        try
+        {
+            DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, managementVip, managementPort,
+                    managementUsername, managementPassword, appInstanceName,
+                    storageInstanceName, initiatorGroupName, initiators, _timeout);
+        }
+        catch(Exception ex)
+        {
+            DateraRestClientMgr.getInstance().setAdminState(rest, dtMetaData, false);
+            DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData);
+            throw new CloudRuntimeException(ex.getMessage());
+        }
+        finally{
+            lock.unlock();
+            lock.releaseRef();
+        }
         parameters.setUuid(uuid);
 
         details.put(DateraUtil.MANAGEMENT_IP, managementVip);
@@ -554,11 +578,28 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         if (clusterId != null) {
             //remove initiator from the storage
             //unregister the initiators or remove the initiator group
-        }
+            ClusterVO cluster = _clusterDao.findById(clusterId);
+            GlobalLock lock = GlobalLock.getInternLock(cluster.getUuid());
 
-        if(isDateraSupported(hypervisorType)) {
-            // The CloudStack operation must continue even of the Datera Side operation does not succeed
-            deleteDateraApplicationInstance(storagePool.getId());
+            if(!lock.lock(DateraUtil.LOCK_TIME_IN_SECOND)){
+                String err = DateraUtil.LOG_PREFIX+" Deleteing storage could not lock on : "+cluster.getUuid();
+                throw new CloudRuntimeException(err);
+            }
+            try{
+
+                if(isDateraSupported(hypervisorType)) {
+                    // The CloudStack operation must continue even of the Datera Side operation does not succeed
+                    deleteDateraApplicationInstance(storagePool.getId());
+                }
+            }
+            catch(Exception ex){
+                //do not throw any exception here
+            }
+            finally{
+                lock.unlock();
+                lock.releaseRef();
+            }
+
         }
 
         return _primaryDataStoreHelper.deletePrimaryDataStore(dataStore);
@@ -584,11 +625,16 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
                 s_logger.error(DateraUtil.LOG_PREFIX + " Could not delete the App instance");
             }
 
+            List<String> initiators = DateraRestClientMgr.getInstance().getInitiatorGroupMembers(rest, dtMetaData);
+
             if(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData)){
                 s_logger.info(DateraUtil.LOG_PREFIX  + " Successfully deleted the initiator group");
             } else {
                 s_logger.error(DateraUtil.LOG_PREFIX  + " Could not delete the initiator group");
             }
+
+            if(null != initiators)
+                DateraRestClientMgr.getInstance().unregisterInitiators(rest, dtMetaData, initiators);
         }
         catch(Exception ex)
         {

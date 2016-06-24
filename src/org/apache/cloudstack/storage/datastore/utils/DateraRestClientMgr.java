@@ -455,7 +455,7 @@ public class DateraRestClientMgr {
         List<DateraModel.InitiatorGroup> initiatorGroups = rest.enumerateInitiatorGroupsEx();
         for(DateraModel.InitiatorGroup iter : initiatorGroups)
         {
-            existingInititators.addAll(iter.members);
+            existingInititators.addAll(extractOnlyInitiators(iter.members));
         }
         for(String iqn : initiators)
         {
@@ -525,6 +525,66 @@ public class DateraRestClientMgr {
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
         return rest.enumerateInitiatorGroupsEx();
+    }
+
+    public List<String> getInitiatorGroupMembers(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData)
+    {
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not get initiators of the initiator group");
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        DateraModel.InitiatorGroup currentInitiatorGroup = null;
+        List<DateraModel.InitiatorGroup> initiatorGroups = rest.enumerateInitiatorGroupsEx();
+        for(DateraModel.InitiatorGroup iter : initiatorGroups)
+        {
+            if(true == iter.name.contains(dtMetaData.initiatorGroupName))
+            {
+                currentInitiatorGroup = iter;
+                initiatorGroups.remove(iter);
+                break;
+            }
+        }
+
+        return extractOnlyInitiators(currentInitiatorGroup.members);
+    }
+
+    private List<String> extractOnlyInitiators(List<String> allInitiators) {
+        List<String> filtered = new ArrayList<String>();
+        for(String iter : allInitiators)
+        {
+            filtered.add(iter.substring(iter.lastIndexOf('/')+1,iter.length()));
+        }
+        return filtered;
+    }
+    public List<String> enumerateInitiatorNames(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData)
+    {
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not enumerate initiator");
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        return rest.enumerateInitiatorNames();
     }
 
 }

@@ -112,6 +112,7 @@ public class DateraUtil {
     public static final String DATASTORE_NAME = "datastoreName";
     public static final String IQN = "iqn";
     private static final String DEFAULT_NETWORK_POOL_NAME = "default";
+    public static final int LOCK_TIME_IN_SECOND = 300;
 
 
     public static boolean hostsSupport_iScsi(List<HostVO> hosts) {
