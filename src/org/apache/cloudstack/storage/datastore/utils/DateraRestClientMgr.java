@@ -1,8 +1,10 @@
 package org.apache.cloudstack.storage.datastore.utils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -99,9 +101,9 @@ public class DateraRestClientMgr {
         {
             rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
         }
-        rest.registerInitiators(initiators);
+        registerInitiators(rest,null,initiators);
         List<String> listIqns = new ArrayList<String>(initiators.values());
-        rest.createInitiatorGroup(initiatorGroupName, listIqns);
+        createInitiatorGroup(rest,null,initiatorGroupName, listIqns);
         List<String> initiatorGroups = new ArrayList<String>();
         initiatorGroups.add(initiatorGroupName);
         if(false == rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
@@ -428,4 +430,101 @@ public class DateraRestClientMgr {
         }
         return rest.setAdminState(dtMetaData.appInstanceName, online);
     }
+
+    public boolean unregisterInitiators(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData, List<String> initiators)
+    {
+        if(null == initiators)
+            return false;
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not clean initiators of the initiator group");
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        boolean success = false;
+        Set<String> existingInititators = new HashSet<String>();
+        List<DateraModel.InitiatorGroup> initiatorGroups = rest.enumerateInitiatorGroupsEx();
+        for(DateraModel.InitiatorGroup iter : initiatorGroups)
+        {
+            existingInititators.addAll(iter.members);
+        }
+        for(String iqn : initiators)
+        {
+            if(false == existingInititators.contains(iqn))
+            {
+                rest.unregisterInitiator(iqn);
+                success = true;
+            }
+        }
+
+        return success;
+    }
+
+    public boolean createInitiatorGroup(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData, String groupName,List<String> initiators)
+    {
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not create initiator group");
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        return rest.createInitiatorGroup(groupName, initiators);
+    }
+    public List<String> registerInitiators(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData, Map<String,String> initiators)
+    {
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not register initiator");
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        return rest.registerInitiators(initiators);
+    }
+    public List<DateraModel.InitiatorGroup> enumerateInitiatorGroup(DateraRestClient rest, DateraUtil.DateraMetaData dtMetaData)
+    {
+        if(null == rest)
+        {
+            if(null == dtMetaData)
+            {
+                if(allowThrowException)
+                {
+                    throw new CloudRuntimeException("Could not enumerate initiator group");
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
+        }
+        return rest.enumerateInitiatorGroupsEx();
+    }
+
 }

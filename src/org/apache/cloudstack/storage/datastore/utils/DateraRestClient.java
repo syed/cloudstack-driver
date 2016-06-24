@@ -68,7 +68,32 @@ public class DateraRestClient {
   password = pass;
   doLogin();
  }
+ public List<DateraModel.InitiatorGroup> enumerateInitiatorGroupsEx()
+ {
+     HttpGet getRequest = new HttpGet("/v2/initiator_groups");
+     setHeaders(getRequest);
+     String response = execute(getRequest);
+     return extractInitiatorGroups(response);
+ }
+ private List<DateraModel.InitiatorGroup> extractInitiatorGroups(String response)
+ {
+     if(null == response)
+         return null;
+     List<DateraModel.InitiatorGroup> initiatorGroups = new ArrayList<DateraModel.InitiatorGroup>();
+     GsonBuilder gsonBuilder = new GsonBuilder();
+     Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
+     gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
+     Gson gson1 = gsonBuilder.create();
 
+     Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
+     for (Map.Entry<String, Object> entry : map.entrySet()) {
+         String initiatorGroupJson = entry.getValue().toString();
+         DateraModel.InitiatorGroup initiatorGroup =  gson.fromJson(initiatorGroupJson,DateraModel.InitiatorGroup.class);
+         initiatorGroups.add(initiatorGroup);
+      }
+
+     return initiatorGroups;
+ }
  public boolean updateQos(String appInstance, String storageInstance, String volumeName, long totalIOPS)
  {
      String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
@@ -261,6 +286,7 @@ public class DateraRestClient {
     s_logger.info("DateraRestClient.unregisterInitiator response ="+response);
     DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
     if(null == resp) return false;
+    if(null == resp.id) return false;
     return resp.id.equals(iqn) ? true : false;
  }
  public boolean registerInitiator(String labelName, String iqn)

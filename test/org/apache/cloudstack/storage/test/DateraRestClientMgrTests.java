@@ -4,8 +4,10 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.cloudstack.storage.datastore.utils.AppInstanceInfo;
@@ -44,6 +46,7 @@ public class DateraRestClientMgrTests {
                 rest = new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
             }
             
+            assertTrue(DateraRestClientMgr.getInstance().setAdminState(rest, dtMetaData, false));
             assertTrue(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData));
     
             assertEquals(false,DateraRestClientMgr.getInstance().isAppInstanceExists(rest, dtMetaData));
@@ -58,7 +61,7 @@ public class DateraRestClientMgrTests {
     public void utCreateVolumeWithInitiators()
     {
         rest =  new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
-        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
+        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, UUID.randomUUID().toString());
         String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
         dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummy", 3, DateraCommon.DEFAULT_NETWORK_POOL_NAME, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName,"vgDummy");
         DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
@@ -100,7 +103,7 @@ public class DateraRestClientMgrTests {
         dtMetaData.initiatorGroupName = "";
         dtMetaData.clvmVolumeGroupName = "dummyCLVM";
 
-        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
+        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, UUID.randomUUID().toString());
         String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
         dtMetaData.appInstanceName = appInstanceName;
         dtMetaData.initiatorGroupName = initiatorGroupName;
@@ -132,7 +135,7 @@ public class DateraRestClientMgrTests {
     public void utResizeVolume()
     {
         rest =  new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
-        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
+        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, UUID.randomUUID().toString());
         String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
         dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummy", 3, DateraCommon.DEFAULT_NETWORK_POOL_NAME, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName,"vgDummy");
         DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
@@ -183,7 +186,7 @@ public class DateraRestClientMgrTests {
         dtMetaData.initiatorGroupName = "";
         dtMetaData.clvmVolumeGroupName = "dummyCLVM";
 
-        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
+        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, UUID.randomUUID().toString());
         String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
         dtMetaData.appInstanceName = appInstanceName;
         dtMetaData.initiatorGroupName = initiatorGroupName;
@@ -224,7 +227,7 @@ public class DateraRestClientMgrTests {
     public void utUpdateIOPS()
     {
         rest =  new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
-        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
+        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, UUID.randomUUID().toString());
         String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
         dtMetaData = new DateraUtil.DateraMetaData(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummy", 3, DateraCommon.DEFAULT_NETWORK_POOL_NAME, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName,"vgDummy");
         DateraRestClientMgr.getInstance().createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES,DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
@@ -271,7 +274,7 @@ public class DateraRestClientMgrTests {
         dtMetaData.initiatorGroupName = "";
         dtMetaData.clvmVolumeGroupName = "dummyCLVM";
 
-        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, null);
+        appInstanceName = DateraRestClientMgr.getInstance().suggestAppInstanceName(rest, dtMetaData, UUID.randomUUID().toString());
         String initiatorGroupName = DateraRestClientMgr.getInstance().generateInitiatorGroupName(rest, dtMetaData,iqns,appInstanceName);
         dtMetaData.appInstanceName = appInstanceName;
         dtMetaData.initiatorGroupName = initiatorGroupName;
@@ -407,6 +410,7 @@ public class DateraRestClientMgrTests {
 
         
         assertTrue(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData));
+        assertTrue(DateraRestClientMgr.getInstance().setAdminState(rest, dtMetaData, false));
         assertTrue(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData));
     }
 /*  
@@ -575,4 +579,116 @@ public class DateraRestClientMgrTests {
         }
 
     }
+    
+    @Test
+    public void utUnregisterInitiator()
+    {
+        dateraCleanup = false;
+        DateraUtil.DateraMetaData dtMetaData = new DateraUtil.DateraMetaData();
+        rest =  new DateraRestClient(DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD);
+        
+        Map<String,String> initiators = new HashMap<String,String>();
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_1);
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_2);
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_3);
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
+        initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
+//clean up the initiators
+        DateraRestClientMgr.getInstance().unregisterInitiators(rest, dtMetaData, new ArrayList<String>(initiators.values()));
+        DateraRestClientMgr.getInstance().registerInitiators(rest, dtMetaData, initiators);
+        String groupName1 = "cs_"+UUID.randomUUID().toString();
+        String groupName2 = "cs_"+UUID.randomUUID().toString();
+        String groupName3 = "cs_"+UUID.randomUUID().toString();
+        
+        List<String> iqns1 = new ArrayList<String>();
+        iqns1.add(DateraCommon.INITIATOR_1);
+        DateraRestClientMgr.getInstance().createInitiatorGroup(rest, dtMetaData, groupName1, iqns1);
+        
+        List<String> iqns2 = new ArrayList<String>();
+        iqns2.add(DateraCommon.INITIATOR_2);
+        iqns2.add(DateraCommon.INITIATOR_3);
+        DateraRestClientMgr.getInstance().createInitiatorGroup(rest, dtMetaData, groupName2, iqns2);
+        
+        List<String> iqns3 = new ArrayList<String>();
+        iqns3.add(DateraCommon.INITIATOR_1);
+        iqns3.add(DateraCommon.INITIATOR_2);
+        iqns3.add(DateraCommon.INITIATOR_3);
+        iqns3.add(DateraCommon.INITIATOR_4);
+        iqns3.add(DateraCommon.INITIATOR_5);
+        DateraRestClientMgr.getInstance().createInitiatorGroup(rest, dtMetaData, groupName3, iqns3);
+
+        Set<String> allInitiators = new HashSet<String>();
+        List<DateraModel.InitiatorGroup> initiatorGroups = null;
+
+        initiatorGroups = DateraRestClientMgr.getInstance().enumerateInitiatorGroup(rest, dtMetaData);
+        for(DateraModel.InitiatorGroup iter : initiatorGroups)
+        {
+            allInitiators.addAll(iter.members);
+        }
+        allInitiators = extractOnlyInitiators(allInitiators);
+        assertTrue(allInitiators.contains(DateraCommon.INITIATOR_1));
+        assertTrue(allInitiators.contains(DateraCommon.INITIATOR_2));
+        assertTrue(allInitiators.contains(DateraCommon.INITIATOR_3));
+        assertTrue(allInitiators.contains(DateraCommon.INITIATOR_4));
+        assertTrue(allInitiators.contains(DateraCommon.INITIATOR_5));
+        allInitiators.clear();
+
+//delete the group
+        dtMetaData.initiatorGroupName = groupName3;
+        DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData);
+        initiatorGroups = DateraRestClientMgr.getInstance().enumerateInitiatorGroup(rest, dtMetaData);
+        for(DateraModel.InitiatorGroup iter : initiatorGroups)
+        {
+            allInitiators.addAll(iter.members);
+        }
+        allInitiators = extractOnlyInitiators(allInitiators);
+        assertTrue(allInitiators.contains(DateraCommon.INITIATOR_1));
+        assertTrue(allInitiators.contains(DateraCommon.INITIATOR_2));
+        assertTrue(allInitiators.contains(DateraCommon.INITIATOR_3));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_4));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_5));
+        allInitiators.clear();
+//delete the group
+        dtMetaData.initiatorGroupName = groupName2;
+        DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData);
+        initiatorGroups = DateraRestClientMgr.getInstance().enumerateInitiatorGroup(rest, dtMetaData);
+        for(DateraModel.InitiatorGroup iter : initiatorGroups)
+        {
+            allInitiators.addAll(iter.members);
+        }
+        allInitiators = extractOnlyInitiators(allInitiators);
+        assertTrue(allInitiators.contains(DateraCommon.INITIATOR_1));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_2));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_3));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_4));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_5));
+        
+        allInitiators.clear();
+
+//delete the group
+        dtMetaData.initiatorGroupName = groupName1;
+        DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData);
+        initiatorGroups = DateraRestClientMgr.getInstance().enumerateInitiatorGroup(rest, dtMetaData);
+        for(DateraModel.InitiatorGroup iter : initiatorGroups)
+        {
+            allInitiators.addAll(iter.members);
+        }
+        allInitiators = extractOnlyInitiators(allInitiators);
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_1));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_2));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_3));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_4));
+        assertFalse(allInitiators.contains(DateraCommon.INITIATOR_5));
+        
+        allInitiators.clear();
+
+    }
+	private Set<String> extractOnlyInitiators(Set<String> allInitiators) {
+		Set<String> filtered = new HashSet<String>();
+		for(String iter : allInitiators)
+		{
+			filtered.add(iter.substring(iter.lastIndexOf('/')+1,iter.length()));
+		}
+		return filtered;
+	}
 }
