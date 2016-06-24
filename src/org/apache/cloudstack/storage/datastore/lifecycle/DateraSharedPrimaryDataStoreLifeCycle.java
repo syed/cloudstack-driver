@@ -231,7 +231,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
         String initiatorGroupName = DateraUtil.generateInitiatorGroupName(appInstanceName);
         Map<String, String> initiators = extractInitiators(clusterId);
-        DateraRestClientMgr.getInstance().registerInitiators(rest, managementVip, managementPort,
+        DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, managementVip, managementPort,
                 managementUsername, managementPassword, appInstanceName,
                 storageInstanceName, initiatorGroupName, initiators, _timeout);
 

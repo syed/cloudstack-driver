@@ -107,7 +107,7 @@ public class DateraRestMgrMockTest {
     	initGroups.add("test_init_grp_1");
     	when(rest.updateStorageWithInitiator(appName, DateraModel.defaultStorageName, null, initGroups)).thenReturn(true);
 
-    	restMgr.registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
+    	restMgr.registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
     			DateraCommon.PASSWORD, appName, DateraModel.defaultStorageName, "test_init_grp_1", initiators, 10L);
     }
     

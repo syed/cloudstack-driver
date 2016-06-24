@@ -92,7 +92,7 @@ public class DateraRestClientMgr {
         return rest.getStorageInfo(appInstanceName, storageInstanceName);
     }
 
-    public boolean registerInitiators(DateraRestClient rest, String managementIP,
+    public boolean registerInitiatorsAndUpdateStorageWithInitiatorGroup(DateraRestClient rest, String managementIP,
             int managementPort, String managementUsername,
             String managementPassword, String appInstanceName,
             String storageInstanceName, String initiatorGroupName,

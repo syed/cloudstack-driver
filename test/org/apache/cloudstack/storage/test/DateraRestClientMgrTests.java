@@ -79,7 +79,7 @@ public class DateraRestClientMgrTests {
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
         iqns = new ArrayList<String>(initiators.values());
-        DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
+        DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
 
         storageInfo = DateraRestClientMgr.getInstance().getStorageInfo(rest,dtMetaData);
         assertEquals(1,storageInfo.aclPolicy.initiatorGroups.size());
@@ -123,7 +123,7 @@ public class DateraRestClientMgrTests {
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
         iqns = new ArrayList<String>(initiators.values());
-        DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, "storage-1", initiatorGroupName, initiators, 1);
+        DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, "storage-1", initiatorGroupName, initiators, 1);
 
         storageInfo = DateraRestClientMgr.getInstance().getStorageInfo(rest,dtMetaData);
         assertEquals(1,storageInfo.aclPolicy.initiatorGroups.size());
@@ -154,7 +154,7 @@ public class DateraRestClientMgrTests {
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
         iqns = new ArrayList<String>(initiators.values());
-        DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
+        DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
 
         storageInfo = DateraRestClientMgr.getInstance().getStorageInfo(rest, dtMetaData);
         assertEquals(1,storageInfo.aclPolicy.initiatorGroups.size());
@@ -206,7 +206,7 @@ public class DateraRestClientMgrTests {
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
         iqns = new ArrayList<String>(initiators.values());
-        DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
+        DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
 
         storageInfo = DateraRestClientMgr.getInstance().getStorageInfo(rest, dtMetaData);
         assertEquals(1,storageInfo.aclPolicy.initiatorGroups.size());
@@ -241,7 +241,7 @@ public class DateraRestClientMgrTests {
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
         iqns = new ArrayList<String>(initiators.values());
-        DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
+        DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
 
         storageInfo = DateraRestClientMgr.getInstance().getStorageInfo(rest, dtMetaData);
         assertEquals(1,storageInfo.aclPolicy.initiatorGroups.size());
@@ -289,7 +289,7 @@ public class DateraRestClientMgrTests {
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
         iqns = new ArrayList<String>(initiators.values());
-        DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
+        DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, DateraModel.defaultStorageName, initiatorGroupName, initiators, 1);
 
         storageInfo = DateraRestClientMgr.getInstance().getStorageInfo(rest, dtMetaData);
         assertEquals(1,storageInfo.aclPolicy.initiatorGroups.size());
@@ -366,13 +366,13 @@ public class DateraRestClientMgrTests {
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_4);
         initiators.put(DateraUtil.constructInitiatorLabel(UUID.randomUUID().toString()), DateraCommon.INITIATOR_5);
         iqns = new ArrayList<String>(initiators.values());
-        DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, "storage-1", initiatorGroupName, initiators, 1);
+        DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, appInstanceName, "storage-1", initiatorGroupName, initiators, 1);
 
         DateraModel.PerformancePolicy policy = DateraRestClientMgr.getInstance().getQos(rest, dtMetaData);
         assertTrue(null != policy);
         assertEquals(DateraCommon.DEFAULT_CAPACITY_IOPS,policy.totalIopsMax);
 
-        assertTrue(false == DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummyApp", "storage-1", initiatorGroupName, initiators, 1));
+        assertTrue(false == DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummyApp", "storage-1", initiatorGroupName, initiators, 1));
 
         
         boolean allowThrowException = DateraRestClientMgr.getInstance().isAllowThrowException();
@@ -399,7 +399,7 @@ public class DateraRestClientMgrTests {
 
         try
         {
-            DateraRestClientMgr.getInstance().registerInitiators(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummyApp", "storage-1", initiatorGroupName, initiators, 1);
+            DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, DateraCommon.PASSWORD, "dummyApp", "storage-1", initiatorGroupName, initiators, 1);
         }
         catch(Exception ex)
         {
