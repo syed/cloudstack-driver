@@ -79,7 +79,7 @@ public class DateraUtil {
 
     public static final String APP_NAME = "appName";
     public static final String STORAGE_NAME = "storageName";
-    public static final String INITIATOR_GROUP_NAME = "volumeGroupName";
+    public static final String INITIATOR_GROUP_NAME = "initiatorGroupName";
 
     public static final String VOLUME_REPLICA = "replica";
     public static final int MAX_VOLUME_REPLICA = 5;
