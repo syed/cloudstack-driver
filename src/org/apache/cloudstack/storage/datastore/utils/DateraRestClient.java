@@ -17,7 +17,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.cloudstack.storage.datastore.driver.DateraPrimaryDataStoreDriver;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -45,7 +44,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 public class DateraRestClient {
-    private static final Logger s_logger = Logger.getLogger(DateraPrimaryDataStoreDriver.class);
+    private static final Logger s_logger = Logger.getLogger(DateraRestClient.class);
 
     private Gson gson = new GsonBuilder().create();
     private LoginResponse respLogin = new LoginResponse();
