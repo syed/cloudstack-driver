@@ -191,6 +191,7 @@ public class DateraRestClient {
       HttpDelete deleteRequest = new HttpDelete("/v2/initiator_groups/"+groupName);
       setHeaders(deleteRequest);
       String response = execute(deleteRequest);
+      s_logger.info("DateraRestClient.deleteInitiatorGroup response : " + response);
       DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
 
       if(null == resp) return false;
@@ -298,7 +299,7 @@ public class DateraRestClient {
     String payload = gson.toJson(initiator);
     setPayload(postRequest, payload);
     String response = execute(postRequest);
-    s_logger.info("DateraRestClient.registerInitiator response ="+response);
+    s_logger.info("DateraRestClient.registerInitiator response = " + response);
     DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
     if(null == resp) return false;
     if(resp.name.equals(CONFLICT_ERROR))
@@ -327,6 +328,7 @@ public class DateraRestClient {
      String payload = gson.toJson(vol);
      setPayload(postRequest,payload);
      String response = execute(postRequest);
+     s_logger.info(DateraUtil.LOG_PREFIX+ "DateraRestClient.createVolume payload : " + payload);
      DateraModel.GenericResponse resp = gson.fromJson(response, DateraModel.GenericResponse.class);
      if(null == resp) return false;
      return resp.name.equals(volName) ? true : false;
@@ -398,10 +400,11 @@ private void setPayload(HttpPut request, String payload) {
     String payload = gson.toJson(vol);
 
     setPayload(putRequest, payload);
-     String response = execute(putRequest);
-     DateraModel.GenericResponse resp = gson.fromJson(response,DateraModel.GenericResponse.class);
-     if(null == resp) return false;
-     return resp.name.equals(volumeInstance) ? true : false;
+    String response = execute(putRequest);
+    s_logger.info(DateraUtil.LOG_PREFIX + "DateraRestClient.resizeVolume response : " + response);
+    DateraModel.GenericResponse resp = gson.fromJson(response,DateraModel.GenericResponse.class);
+    if(null == resp) return false;
+    return resp.name.equals(volumeInstance) ? true : false;
  }
 
  public boolean deleteAppInstance(String appInstance)
@@ -409,7 +412,7 @@ private void setPayload(HttpPut request, String payload) {
   HttpDelete deleteRequest = new HttpDelete("/v2/app_instances/"+appInstance);
   setHeaders(deleteRequest);
   String response = execute(deleteRequest);
-
+  s_logger.info(DateraUtil.LOG_PREFIX + "DateraRestClient.deleteAppInstance response : " + response);
   DateraModel.GenericResponse respObj = gson.fromJson(response, DateraModel.GenericResponse.class);
   if(null == respObj) return false;
   return respObj.name.equals(appInstance) ? true : false;
@@ -449,7 +452,7 @@ private void setPayload(HttpPut request, String payload) {
 
   DateraModel.InitiatorGroup intrGroup = new DateraModel.InitiatorGroup(groupName,initiators);
   String payload = gson.toJson(intrGroup);
-
+  s_logger.info(DateraUtil.LOG_PREFIX + "DateraRestClient.createInitiatorGroup payload ="+ payload);
   setPayload(postRequest, payload);
   String response = execute(postRequest);
 
@@ -528,12 +531,12 @@ public List<String> registerInitiators(Map<String,String> initiators)
        networkPoolName = "/access_network_ip_pools/"+networkPoolName;
        String payload = generateVolumePayload(appInstanceName,initiators,initiatorGroups,volumeGB,volReplica,accessControlMode,networkPoolName);
 
-       s_logger.info("DateraRestClient.createVolume payload ="+ payload);
+       s_logger.info(DateraUtil.LOG_PREFIX+ "DateraRestClient.createVolume payload ="+ payload);
        setPayload(postRequest, payload);
 
        String response = execute(postRequest);
 
-       s_logger.info("DateraRestClient.createVolume response ="+ response);
+       s_logger.info(DateraUtil.LOG_PREFIX + "DateraRestClient.createVolume response = " + response);
        AppInstanceInfo resp = gson.fromJson(response, AppInstanceInfo.class);
 
        return resp;
@@ -575,7 +578,9 @@ public List<String> registerInitiators(Map<String,String> initiators)
 
   if(null == resp || resp.isEmpty())
   {
-     throw new RuntimeException(DATERA_LOG_PREFIX+"No response from the datera node");
+     //throw new RuntimeException(DATERA_LOG_PREFIX + "No response from the datera node");
+     throw new RuntimeException(DATERA_LOG_PREFIX + "Logging into the Datera cluster failed, Please check the " +
+          "credentials provided in URL");
   }
   DateraModel.DateraError error = gson.fromJson(resp, DateraModel.DateraError.class);
   if(null != error.name && error.name.equals(AUTH_FAILED_ERROR))
