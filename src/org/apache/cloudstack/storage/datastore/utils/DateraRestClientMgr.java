@@ -142,8 +142,15 @@ public class DateraRestClientMgr {
             }
             rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
         }
-        // commenting setAdminState() call, because enable maintenance mode has already called this
-        //rest.setAdminState(dtMetaData.appInstanceName, false);
+
+        DateraModel.AppModel appModel = rest.getAppInstanceInfo(dtMetaData.appInstanceName);
+        if(null != appModel)
+        {
+            if(true == appModel.adminState.equals(DateraUtil.ADMIN_STATE_ONLINE))
+            {
+                rest.setAdminState(dtMetaData.appInstanceName, false);
+            }
+        }
         return rest.deleteAppInstance(dtMetaData.appInstanceName);
     }
 
