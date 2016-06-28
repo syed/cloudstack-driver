@@ -40,6 +40,7 @@ public class DateraUtil {
      public String storageInstanceName;
      public String initiatorGroupName;
      public String clvmVolumeGroupName;
+     public String storageVip2;
 
         public DateraMetaData(String ip, int port, String user, String pass, String storage,int paramReplica, String nwPoolName, String appInstanceName, String storageInstanceName, String initiatorGroupName,String clvmVolumeGroupName)
         {
@@ -71,7 +72,8 @@ public class DateraUtil {
 
     public static final String MANAGEMENT_PORT = "mgmtPort";
 
-    public static final String STORAGE_VIP = "storageVIP";
+    public static final String STORAGE_VIP_1 = "storageVIP1";
+    public static final String STORAGE_VIP_2 = "storageVIP2";
     public static final String STORAGE_PORT = "storagePort";
 
     public static final String MANAGEMENT_USERNAME = "mgmtUserName";
@@ -255,6 +257,9 @@ public class DateraUtil {
         storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.INITIATOR_GROUP_NAME);
         String initiatorGroupName = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
 
+        storagePoolDetail = storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.STORAGE_VIP_2);
+        String storageVip2 = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
+
         DateraMetaData dtMetaData = new DateraMetaData();
         dtMetaData.mangementIP = managementIP;
         dtMetaData.managementPort = managementPort;
@@ -267,6 +272,7 @@ public class DateraUtil {
         dtMetaData.storageInstanceName = storageInstanceName;
         dtMetaData.initiatorGroupName = initiatorGroupName;
         dtMetaData.clvmVolumeGroupName = clvmVolumeGroupName;
+        dtMetaData.storageVip2 = storageVip2;
         return dtMetaData;
     }
 

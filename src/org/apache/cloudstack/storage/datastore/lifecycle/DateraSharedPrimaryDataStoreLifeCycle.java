@@ -198,7 +198,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
 
         String iqn = "";
-        String storageVip = "";
+        String storageVip1 = "";
+        String storageVip2 = "";
         int storagePort = DateraUtil.DEFAULT_STORAGE_PORT;
         String storagePath = "";
         DateraRestClient rest= new DateraRestClient(managementVip, managementPort, managementUsername, managementPassword);
@@ -222,12 +223,16 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             }
             storageInstanceName = dtStorageInfo.name;
             iqn = dtStorageInfo.access.iqn;
-            storageVip = dtStorageInfo.access.ips.get(0);
+            storageVip1 = dtStorageInfo.access.ips.get(0);
+            if(null != dtStorageInfo.access.ips.get(1))
+                storageVip2 = dtStorageInfo.access.ips.get(1);
+
+            s_logger.info("Storage VIP1 = "+storageVip1+", Storage VIP2 = "+storageVip2);
         }
         else
         {
             iqn = "iqn";
-            storageVip = clvmVolumeGroupName;
+            storageVip1 = clvmVolumeGroupName;
             storagePath = clvmVolumeGroupName;
         }
         String initiatorGroupName = DateraUtil.generateInitiatorGroupName(appInstanceName);
@@ -270,6 +275,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         details.put(DateraUtil.NETWORK_POOL_NAME,networkPoolName);
         details.put(DateraUtil.CLVM_VOLUME_GROUP_NAME,clvmVolumeGroupName);
         details.put(DateraUtil.INITIATOR_GROUP_NAME, initiatorGroupName);
+        details.put(DateraUtil.STORAGE_VIP_2, storageVip2);
 
         if (HypervisorType.VMware.equals(hypervisorType)) {
             String datastore = iqn.replace("/", "_");
@@ -281,17 +287,17 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
             details.put(DateraUtil.DATASTORE_NAME, datastore);
             details.put(DateraUtil.IQN, iqn);
-            details.put(DateraUtil.STORAGE_VIP, storageVip);
+            details.put(DateraUtil.STORAGE_VIP_1, storageVip1);
             details.put(DateraUtil.STORAGE_PORT, String.valueOf(storagePort));
         }
         else if (HypervisorType.KVM.equals(hypervisorType))
         {
             parameters.setPath(storagePath);
-            parameters.setHost(storageVip);
+            parameters.setHost(storageVip1);
             parameters.setPort(storagePort);
         }
         else {
-            parameters.setHost(storageVip);
+            parameters.setHost(storageVip1);
             parameters.setPort(storagePort);
             parameters.setPath("/"+iqn+"/0");
         }
@@ -387,6 +393,25 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             }
         }
 
+        //attempt with the alternate storage IP
+        if(!success)
+        {
+            StoragePoolDetailVO storagePoolDetail = _storagePoolDetailsDao.findDetail(primaryDataStoreInfo.getId(), DateraUtil.STORAGE_VIP_2);
+            String storageVip2 = (null != storagePoolDetail) ? storagePoolDetail.getValue() : "";
+
+            StoragePoolVO storagePool = _primaryDataStoreDao.findById(primaryDataStoreInfo.getId());
+            s_logger.info("Connection using the first storage VIP1 failed, attempting with storage VIP2, VIP1 = "+storagePool.getHostAddress()+", VIP2 = "+storageVip2);
+            storagePool.setHostAddress(storageVip2);
+            _primaryDataStoreDao.update(primaryDataStoreInfo.getId(), storagePool);
+            for (HostVO host : allHosts) {
+                success = createStoragePool(host, storagePool);
+
+                if (success) {
+                    break;
+                }
+            }
+        }
+
         if (!success) {
             deleteDateraApplicationInstance(primaryDataStoreInfo.getId());
             _primaryDataStoreDao.expunge(primaryDataStoreInfo.getId());
@@ -436,7 +461,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
             details.put(CreateStoragePoolCommand.IQN, storagePoolDetail.getValue());
 
-            storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePool.getId(), DateraUtil.STORAGE_VIP);
+            storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePool.getId(), DateraUtil.STORAGE_VIP_1);
 
             details.put(CreateStoragePoolCommand.STORAGE_HOST, storagePoolDetail.getValue());
 
@@ -544,7 +569,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
                 details.put(DeleteStoragePoolCommand.IQN, storagePoolDetail.getValue());
 
-                storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePool.getId(), DateraUtil.STORAGE_VIP);
+                storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePool.getId(), DateraUtil.STORAGE_VIP_1);
 
                 details.put(DeleteStoragePoolCommand.STORAGE_HOST, storagePoolDetail.getValue());
 
