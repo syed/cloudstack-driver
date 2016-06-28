@@ -452,8 +452,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         if (answer != null && answer.getResult()) {
             return true;
         } else {
-            deleteDateraApplicationInstance(storagePool.getId());
-            _primaryDataStoreDao.expunge(storagePool.getId());
 
             String msg = "";
 
