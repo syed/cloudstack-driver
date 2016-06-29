@@ -636,34 +636,38 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
     }
 
     private boolean deleteDateraApplicationInstance(long storagePoolId) {
-        try
-        {
-
-            DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
-
-            DateraRestClient rest = null;
-            if(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData)) {
-                s_logger.info(DateraUtil.LOG_PREFIX + " Successfully deleted the App instance");
-            } else {
-                s_logger.error(DateraUtil.LOG_PREFIX + " Could not delete the App instance");
-            }
-
-            List<String> initiators = DateraRestClientMgr.getInstance().getInitiatorGroupMembers(rest, dtMetaData);
-
-            if(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData)){
-                s_logger.info(DateraUtil.LOG_PREFIX  + " Successfully deleted the initiator group");
-            } else {
-                s_logger.error(DateraUtil.LOG_PREFIX  + " Could not delete the initiator group");
-            }
-
-            if(null != initiators)
-                DateraRestClientMgr.getInstance().unregisterInitiators(rest, dtMetaData, initiators);
+        //try
+        //{
+        DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
+        DateraRestClient rest = null;
+        if(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData)) {
+            s_logger.info(DateraUtil.LOG_PREFIX + " Successfully deleted the App instance");
+        } else {
+            String errMsg =  " Could not delete the App instance";
+            s_logger.error(DateraUtil.LOG_PREFIX + errMsg);
+            throw new CloudRuntimeException(errMsg);
         }
-        catch(Exception ex)
-        {
-            s_logger.error(DateraUtil.LOG_PREFIX + " Error while deleting App instance and initiator group : " + ex.getMessage());
-            return false;
+
+        List<String> initiators = DateraRestClientMgr.getInstance().getInitiatorGroupMembers(rest, dtMetaData);
+
+        if(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData)){
+            s_logger.info(DateraUtil.LOG_PREFIX  + " Successfully deleted the initiator group");
+        } else {
+            String errMsg = "Could not delete the initiator group";
+            s_logger.error(DateraUtil.LOG_PREFIX  + errMsg);
+            throw new CloudRuntimeException(errMsg);
         }
+
+        if(null != initiators)
+            DateraRestClientMgr.getInstance().unregisterInitiators(rest, dtMetaData, initiators);
+        //}
+        //catch(Exception ex)
+        //{
+        //   String errMsg = " Error while deleting App instance and initiator group ";
+        //    s_logger.error(DateraUtil.LOG_PREFIX + errMsg + ex.getMessage());
+        //    throw new CloudRuntimeException(errMsg);
+            //return false;
+        //}
         return true;
     }
 

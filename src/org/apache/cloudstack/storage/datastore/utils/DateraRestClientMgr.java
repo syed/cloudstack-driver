@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
@@ -69,20 +70,39 @@ public class DateraRestClientMgr {
         rest.createVolume(appInstanceName, null, null, dtVolSize, replica, accessControlMode, networkPoolName);
         rest.setQos(appInstanceName, storageInstanceName, volumeInstanceName, totalIOPS);
 
-        AppInstanceInfo.VolumeInfo volInfo = rest.getVolumeInfo(appInstanceName, storageInstanceName, volumeInstanceName);
-        boolean volumeCreationSuccess = true;
+        AppInstanceInfo.StorageInstance storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
+        int timeout = DateraUtil.VOLUME_CREATION_TIMEOUT;
+        boolean volumeCreationSuccess = false;
+        if(!storageInfo.opState.equals(DateraRestClient.OP_STATE_AVAILABLE) || !storageInfo.volumes.volume1.opState.equals(DateraRestClient.OP_STATE_AVAILABLE)) {
+            while(timeout > 0) {
+                try {
+                    TimeUnit.SECONDS.sleep(DateraUtil.VOLUME_CREATION_WATING_INTERVAL);
+                } catch (InterruptedException e) {}
+                timeout -= DateraUtil.VOLUME_CREATION_WATING_INTERVAL;
+                storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
+                if(storageInfo.opState.equals(DateraRestClient.OP_STATE_AVAILABLE) && storageInfo.volumes.volume1.opState.equals(DateraRestClient.OP_STATE_AVAILABLE)){
+                    volumeCreationSuccess = true;
+                    break;
+                }
+            }
+            if(timeout == 0 && (!storageInfo.opState.equals(DateraRestClient.OP_STATE_AVAILABLE) || !storageInfo.volumes.volume1.opState.equals(DateraRestClient.OP_STATE_AVAILABLE))) {
+                volumeCreationSuccess = false;
+            }
+        } else {
+            volumeCreationSuccess = true;
+        }
+
         String err = "";
-        if(false == volInfo.name.equals(volumeInstanceName))
-        {
-           err = String.format("Could not create volume /%s/%s/%s ",appInstanceName,storageInstanceName,volumeInstanceName);
+        if(!storageInfo.volumes.volume1.name.equals(volumeInstanceName)) {
+           err = String.format("Could not create volume /%s/%s/%s ",appInstanceName, storageInstanceName, volumeInstanceName);
            volumeCreationSuccess = false;
         }
-        else if(0 != volInfo.opState.compareTo(DateraRestClient.OP_STATE_AVAILABLE))
-        {
-            err = String.format("Unable to create primary storage %s \n Reason: Volume's  opstate = %s /%s/%s/%s ",appInstanceName,volInfo.opState,appInstanceName,storageInstanceName,volumeInstanceName);
+        else if(!volumeCreationSuccess) {
+            err = String.format("Unable to create primary storage %s \n Reason: Volume's  opstate = %s /%s/%s/%s ",appInstanceName,
+                          storageInfo.opState, appInstanceName, storageInstanceName, volumeInstanceName);
             volumeCreationSuccess = false;
         }
-        if(false == volumeCreationSuccess)
+        if(!volumeCreationSuccess)
         {
             rest.setAdminState(appInstanceName, false);
             rest.deleteAppInstance(appInstanceName);
