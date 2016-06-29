@@ -5,16 +5,16 @@ DATERA CloudStack Driver Repository
    :header-rows: 1
    :class: version-table
 
-* - CloudStack Release
-  - Driver Version
-  - Capabilities Introduced
-  - Supported Datera Product Versions
-  - Driver URL
-* - 4.5.2
-  - v1.0
-  - Shared Primary Storage
-  - 1.1
-  - 
+   * - CloudStack Release
+     - Driver Version
+     - Capabilities Introduced
+     - Supported Datera Product Versions
+     - Driver URL
+   * - 4.5.2
+     - v1.0
+     - Shared Primary Storage
+     - 1.1
+     - 
 
 =======
 Configuration Options
@@ -28,17 +28,17 @@ Configuration Options
     - Description
   * - **[DEFAULT]**
     -
-   * - ``datera_api_port`` = ``7717``
+  * - ``datera_api_port`` = ``7717``
      - (String) Datera API port.
-   * - ``datera_api_version`` = ``2``
+  * - ``datera_api_version`` = ``2``
      - (String) Datera API version.
-   * - ``datera_num_replicas`` = ``3``
+  * - ``datera_num_replicas`` = ``3``
      - (String) Number of replicas to create of an inode.
-   * - ``driver_client_cert`` = ``None``
+  * - ``driver_client_cert`` = ``None``
      - (String) The path to the client certificate for verification, if the driver supports it.
-   * - ``driver_client_cert_key`` = ``None``
+  * - ``driver_client_cert_key`` = ``None``
      - (String) The path to the client certificate key for verification, if the driver supports it.
-   * - ``datera_503_timeout`` = ``120``
+  * - ``datera_503_timeout`` = ``120``
      - (Int) Timeout for HTTP 503 retry messages
-   * - ``datera_503_interval`` = ``5``
+  * - ``datera_503_interval`` = ``5``
      - (Int) Interval between 503 retries
