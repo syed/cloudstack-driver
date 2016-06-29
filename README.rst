@@ -1,7 +1,7 @@
 ======
 DATERA CloudStack Driver Repository
 ======
-.. CloudStack Driver Version with Datera Product and Supported Hypervisor(s) 
+.. list-table:: CloudStack Driver Version with Datera Product and Supported Hypervisor(s) 
 #   :header-rows: 1
 #   :class: version-table
 #
