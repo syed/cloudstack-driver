@@ -14,7 +14,7 @@ DATERA CloudStack Driver Repository
 #     - v1.0
 #     - Shared Primary Storage
 #     - 1.1
-#     - 
+#     - https://github.com/Datera/cloudstack/cloud-plugin-storage-volume-datera-4.5.3-SNAPSHOT.jar
 
 =======
 Configuration Options
@@ -38,7 +38,4 @@ Configuration Options
      - (String) The path to the client certificate for verification, if the driver supports it.
   * - ``driver_client_cert_key`` = ``None``
      - (String) The path to the client certificate key for verification, if the driver supports it.
-  * - ``datera_503_timeout`` = ``120``
-     - (Int) Timeout for HTTP 503 retry messages
-  * - ``datera_503_interval`` = ``5``
-     - (Int) Interval between 503 retries
+
