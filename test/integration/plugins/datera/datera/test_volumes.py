@@ -103,7 +103,7 @@ class TestData:
             TestData.diskOffering: {
                 "name": "Datera_DO",
                 "displaytext": "Datera_DO",
-                "disksize": 512,
+                "disksize": 1,
                 "miniops": 300,
                 "maxiops": 500,
                 TestData.tags: TestData.storageTag,
@@ -244,6 +244,10 @@ class TestPrimaryStorage(cloudstackTestCase):
             hypervisor=primarystorage[TestData.hypervisor]
         )
 
+        primary_storage_url = primarystorage[TestData.url]
+        self._verify_attributes(
+            primary_storage.id, primary_storage_url)
+
         self.cleanup.append(primary_storage)
         self.virtual_machine = VirtualMachine.create(
             self.apiClient,
@@ -274,6 +278,10 @@ class TestPrimaryStorage(cloudstackTestCase):
             hypervisor=primarystorage[TestData.hypervisor]
         )
 
+        primary_storage_url = primarystorage[TestData.url]
+        self._verify_attributes(
+            primary_storage.id, primary_storage_url)
+
         self.cleanup.append(primary_storage)
         self.virtual_machine = VirtualMachine.create(
             self.apiClient,
@@ -288,7 +296,7 @@ class TestPrimaryStorage(cloudstackTestCase):
 
         self._validate_storage(primary_storage, self.virtual_machine)
 
-        Volume.create(
+        volume = Volume.create(
             self.apiClient,
             self.testdata[TestData.volume_1],
             account=self.account.name,
@@ -297,6 +305,10 @@ class TestPrimaryStorage(cloudstackTestCase):
             diskofferingid=self.disk_offering.id
         )
 
+        virtual_machine.attach_volume(
+            self.apiClient,
+            volume
+        )
         storage_pools_response = list_storage_pools(
             self.apiClient, id=primary_storage.id)
 
@@ -353,3 +365,145 @@ class TestPrimaryStorage(cloudstackTestCase):
             int(xen_server_response['physical_utilisation']),
             int(volumeData.size),
             "Allocated disk sizes is incorrect in xenserver")
+
+    def _verify_attributes(self, primarystorage_id, primary_storage_url):
+        #Cloudstack Primary storage pool
+        storage_pools_response = list_storage_pools(
+            self.apiClient, id=primarystorage_id)
+        storage_pools_response = storage_pools_response[0]
+        storage_pools_response_type = storage_pools_response.type
+        storage_pools_response_iqn = storage_pools_response.path
+        storage_pools_response_disk = storage_pools_response.disksizetotal
+        storage_pools_response_ipaddress = storage_pools_response.ipaddress
+        storage_pools_response_state = storage_pools_response.state
+        storage_pools_response_iops = storage_pools_response.capacityiops
+
+        self.assertEqual(
+            storage_pools_response_type, "IscsiLUN",
+            "Failed to create IscsiLUN")
+
+        self.assertEqual(
+            storage_pools_response_state, "Up",
+            "Primary storage status is down")
+
+        # Datera app instances
+        datera_primarystorage_name = "cloudstack-" + primarystorage_id
+        for instance in self.datera_api.app_instances.list():
+            if instance['name'] == datera_primarystorage_name:
+                app_instance_response = instance
+        app_instance_response_iqn = (
+            app_instance_response['storage_instances']
+            ['storage-1']['access']['iqn'])
+        app_instance_response_ipaddress = (
+            app_instance_response['storage_instances']
+            ['storage-1']['access']['ips'])
+        app_instance_response_op_state = (
+            app_instance_response['storage_instances']
+            ['storage-1']['volumes']['volume-1']['op_state'])
+        app_instance_response_disk = (
+            app_instance_response['storage_instances']
+            ['storage-1']['volumes']['volume-1']['size'] * 1073741824)
+        app_instance_response_iops = (
+            app_instance_response['storage_instances']
+            ['storage-1']['volumes']['volume-1']['performance_policy']
+            ['total_iops_max'])
+        app_instance_response_replica = (
+            app_instance_response['storage_instances']
+            ['storage-1']['volumes']['volume-1']['replica_count'])
+        app_instance_response_ippool = (
+            app_instance_response['storage_instances']
+            ['storage-1']['ip_pool'])
+
+        cs_replica = [data for data in primary_storage_url.split(";")
+                      if data.startswith('replica')]
+        cs_netPool = [data for data in primary_storage_url.split(";")
+                      if data.startswith('networkPoolName')]
+
+        if cs_replica:
+            replica_count = ''.join(cs_replica).split("=")[1]
+
+            self.assertEqual(
+                int(replica_count),
+                int(app_instance_response_replica),
+                "Incorrect replicas count")
+        if not cs_replica:
+            self.assertEqual(
+                int(3),
+                int(app_instance_response_replica),
+                "Incorrect replicas count")
+
+        if cs_netPool:
+            cs_netPool = ''.join(cs_netPool).split("=")[1]
+            self.assertEqual(
+                app_instance_response_ippool.split('/')[2],
+                cs_netPool,
+                "Incorrect networkPoolName")
+
+        if not cs_netPool:
+            self.assertEqual(
+                app_instance_response_ippool.split('/')[2],
+                'default',
+                "Incorrect networkPool Name")
+        # Verify in sql database
+        command = (
+            "select status,id  from storage_pool where uuid='" +
+            primarystorage_id + "'")
+        sql_result = self.dbConnection.execute(command)
+        self.assertEqual(
+            sql_result[0][0], 'Up',
+            "Priamry storage not added in database")
+
+        command2 = (
+            "select * from storage_pool_details where pool_id='" +
+            str(sql_result[0][1]) + "'")
+
+        sql_result1 = self.dbConnection.execute(command2)
+        flag = 0
+        for data in sql_result1:
+            for record in data:
+                if record == datera_primarystorage_name:
+                    flag = 1
+        self.assertEqual(
+            flag, 1,
+            "Priamry storage not added in database")
+
+        self.assertEqual(
+            app_instance_response_op_state, "available",
+            "datera app instance is down")
+
+        # xen server details
+        for key, value in self.xen_session.xenapi.SR.get_all_records().items():
+            if value['name_description'] == primarystorage_id:
+                xen_server_response = value
+
+        #xen_server_response_iqn = xen_server_response['name_description']
+        xen_server_response_type = xen_server_response['type']
+        xen_server_physical_size = xen_server_response['physical_size']
+
+        if (storage_pools_response_ipaddress not in
+                app_instance_response_ipaddress):
+            self.assert_(False, "Storage ip address are different")
+
+        self.assertEqual(
+            xen_server_response_type, "lvmoiscsi",
+            "Failed to craete lvmoiscsi on xen server")
+
+        self.assertEqual(
+            storage_pools_response_iqn.split("/")[1],
+            app_instance_response_iqn,
+            "Iqn values mismatch")
+
+        self.assertEqual(
+            app_instance_response_disk,
+            storage_pools_response_disk,
+            "Disk sizes are different")
+
+        self.assertEqual(
+            int(xen_server_physical_size) + 12582912,
+            storage_pools_response_disk,
+            "Disk sizes are not same in xen and cloudsatck")
+
+        self.assertEqual(
+            storage_pools_response_iops,
+            app_instance_response_iops,
+            "IOPS values are incorrect")
