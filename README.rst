@@ -44,3 +44,14 @@ Configuration Options
      - (Int) Number of replicas to create of an inode.
    * - ``timeout`` = ``10000``
      - (Int) Number of milliseconds to pause after creating a volume.
+
+===================
+Configuration Steps
+===================
+
+1. Deploy CloudStack by following the instructions http://docs.cloudstack.apache.org/projects/cloudstack-installation/en/4.5/
+2. Download Datera CloudStack driver from https://raw.githubusercontent.com/Datera/cloudstack-driver/master/cloud-plugin-storage-volume-datera-4.5.2.jar
+3. Restart CloudStack management
+```
+$ service cloudstack-management restart
+```
