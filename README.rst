@@ -16,7 +16,7 @@ DATERA CloudStack Driver Repository
      - Shared Primary Storage
      - 1.1
      - XenServer 6.2
-     - https://github.com/Datera/cloudstack/cloud-plugin-storage-volume-datera-4.5.3-SNAPSHOT.jar
+     - https://raw.githubusercontent.com/Datera/cloudstack-driver/master/cloud-plugin-storage-volume-datera-4.5.2.jar
 
 ======================
 Configuration Options
