@@ -500,12 +500,17 @@ class TestPrimaryStorage(cloudstackTestCase):
             "Priamry storage not added in database")
 
         command2 = (
-            "select * from storage_pool_details where id='" +
+            "select * from storage_pool_details where pool_id='" +
             str(sql_result[0][1]) + "'")
-        sql_result1 = self.dbConnection.execute(command2)
 
+        sql_result1 = self.dbConnection.execute(command2)
+        flag = 0
+        for data in sql_result1:
+            for record in data:
+                if record == datera_primarystorage_name:
+                    flag = 1
         self.assertEqual(
-            len(sql_result1), 1,
+            flag, 1,
             "Priamry storage not added in database")
 
         self.assertEqual(
