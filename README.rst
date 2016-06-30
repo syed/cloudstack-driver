@@ -40,10 +40,8 @@ Configuration Options
      - (String) Datera API user password.
    * - ``networkPoolName`` = ``default``
      - (String) Datera access network pool name.
-   * - ``replica`` = ``1``
+   * - ``replica`` = ``3``
      - (Int) Number of replicas to create of an inode.
-   * - ``timeout`` = ``10000``
-     - (Int) Number of milliseconds to pause after creating a volume.
 
 ===================
 Configuration Steps
