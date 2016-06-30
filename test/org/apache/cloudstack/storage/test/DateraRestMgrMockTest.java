@@ -98,6 +98,14 @@ public class DateraRestMgrMockTest {
         restMgr.createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME,
                 DateraCommon.PASSWORD, appName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES, 
                 DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
+        storageInfo.volumes.volume1.opState = "unavailable";
+        try {
+        restMgr.createVolume(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME,
+                DateraCommon.PASSWORD, appName, DateraCommon.DEFAULT_NETWORK_POOL_NAME, DateraCommon.DEFAULT_CAPACITY_BYTES, 
+                DateraCommon.DEFAULT_REPLICA, DateraCommon.DEFAULT_CAPACITY_IOPS);
+        } catch(Exception ex) {
+             assertEquals(CloudRuntimeException.class, ex.getClass());
+        }
     }
     
     @Test
