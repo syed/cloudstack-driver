@@ -100,7 +100,8 @@ public class DateraUtil {
     public static final String ADMIN_STATE_OFFLINE = "offline";
 
 
-    public static final long MAX_TOTAL_IOPS_PER_VOLUME = 100000;
+    //public static final long MAX_TOTAL_IOPS_PER_VOLUME = 100000;
+    public static final long MAX_TOTAL_IOPS_PER_VOLUME = 10000000;
     public static final long MIN_TOTAL_IOPS_PER_VOLUME = 10;
     public static final long DEFAULT_TOTAL_IOPS_PER_VOLUME = 1000;
 
@@ -109,7 +110,8 @@ public class DateraUtil {
     public static final long MIN_CAPACITY_BYTES = 1073741824L;
     public static final long MAX_CAPACITY_BYTES = 70368744177664L;
     public static final int VOLUME_CREATION_TIMEOUT = 30;
-    public static final int VOLUME_CREATION_WATING_INTERVAL = 2;
+    public static final int WATING_INTERVAL = 2;
+    public static final long PRIMARY_STORAGE_CREATION_TIMEOUT = 5000L;
 
     public static final String VOLUME_SIZE_NAME = "dateraVolumeSize";
 
