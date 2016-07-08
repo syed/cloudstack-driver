@@ -178,6 +178,8 @@ public class DateraModel {
         public String name;
         public int code;
         public int http;
+        @SerializedName("errors")
+        public String erros;
         public String message;
         @SerializedName("api_req_id")
         public int apiReqId;

@@ -44,6 +44,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.cloud.utils.exception.CloudRuntimeException;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class DateraRestClientTests {
@@ -277,7 +279,7 @@ public class DateraRestClientTests {
         rest.unregisterInitiator(iqn);
     }
     
-    @Test
+    @Test(expected=CloudRuntimeException.class)
     public void testSetQos() {
     	
     	DateraRestClient client = new DateraRestClient(MANAGEMENT_IP, PORT, USERNAME, PASSWORD);

@@ -71,7 +71,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
     @Inject private StoragePoolDetailsDao _storagePoolDetailsDao;
     @Inject private StoragePoolHostDao _storagePoolHostDao;
     @Inject protected TemplateManager _tmpltMgr;
-    private Long _timeout=10000L;
+    //private Long _timeout=10000L;
+    private long _timeout = 5000L;
 
     // invoked to add primary storage that is based on the Datera plug-in
     @Override
@@ -109,12 +110,14 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
                     + DateraUtil.MAX_CAPACITY_BYTES + " bytes");
         }
 
-        if(capacityIops == null) {
-            capacityIops = 0L;
-        }
-
-        if (capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || (capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME && capacityIops != 0)) {
+        /*if (capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || (capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME && capacityIops != 0)) {
             throw new IllegalArgumentException("'Capacity IOPS' must be between " + DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and " + DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
+        }*/
+        if (capacityIops == null) {
+            throw new CloudRuntimeException("Capacity IOPS can not be blank");
+        }
+        if (capacityIops < 0) {
+            throw new IllegalArgumentException("'Capacity IOPS' " + capacityIops + " is less than minimum value 0");
         }
 
         String val = DateraUtil.getValue(DateraUtil.VOLUME_REPLICA, url,false);
@@ -133,7 +136,7 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         val = DateraUtil.getValue("timeout", url,false);
         if(null == val)
         {
-            _timeout = 10000L;
+            _timeout = DateraUtil.PRIMARY_STORAGE_CREATION_TIMEOUT;
         }
         else
         {
@@ -250,9 +253,11 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         }
         try
         {
-            DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, managementVip, managementPort,
+            if(DateraRestClientMgr.getInstance().registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, managementVip, managementPort,
                     managementUsername, managementPassword, appInstanceName,
-                    storageInstanceName, initiatorGroupName, initiators, _timeout);
+                    storageInstanceName, initiatorGroupName, initiators, _timeout)){
+                s_logger.info("Successfully registred and updated the storage with initiator group.");
+            }
         }
         catch(Exception ex)
         {
@@ -504,7 +509,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
         if(false == DateraRestClientMgr.getInstance().setAdminState(null, dtMetaData, false))
         {
-            throw new CloudRuntimeException("Could not set datera storage to offline mode");
+            s_logger.warn("Could not set the Datera storage to offline mode");
+            //throw new CloudRuntimeException("Could not set datera storage to offline mode");
         }
 
         _storagePoolAutomation.maintain(dataStore);
@@ -519,7 +525,8 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
         if(false == DateraRestClientMgr.getInstance().setAdminState(null, dtMetaData, true))
         {
-            throw new CloudRuntimeException("Could not set datera storage to online mode");
+            s_logger.warn("Could not set the Datera Storage to online mode");
+            //throw new CloudRuntimeException("Could not set datera storage to online mode");
         }
 
         _primaryDataStoreHelper.cancelMaintain(store);
@@ -636,38 +643,37 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
     }
 
     private boolean deleteDateraApplicationInstance(long storagePoolId) {
-        //try
-        //{
-        DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
-        DateraRestClient rest = null;
-        if(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData)) {
-            s_logger.info(DateraUtil.LOG_PREFIX + " Successfully deleted the App instance");
-        } else {
-            String errMsg =  " Could not delete the App instance";
-            s_logger.error(DateraUtil.LOG_PREFIX + errMsg);
-            throw new CloudRuntimeException(errMsg);
+        try
+        {
+            DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
+            DateraRestClient rest = null;
+            if(DateraRestClientMgr.getInstance().deleteAppInstance(rest, dtMetaData)) {
+                s_logger.info(DateraUtil.LOG_PREFIX + " Successfully deleted the App instance");
+            } else {
+                String errMsg =  " Could not delete the App instance";
+                s_logger.error(DateraUtil.LOG_PREFIX + errMsg);
+                //throw new CloudRuntimeException(errMsg);
+            }
+
+            List<String> initiators = DateraRestClientMgr.getInstance().getInitiatorGroupMembers(rest, dtMetaData);
+
+            if(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData)){
+                s_logger.info(DateraUtil.LOG_PREFIX  + " Successfully deleted the initiator group");
+            } else {
+                String errMsg = "Could not delete the initiator group";
+                s_logger.error(DateraUtil.LOG_PREFIX  + errMsg);
+                //throw new CloudRuntimeException(errMsg);
+            }
+
+            if(null != initiators)
+                DateraRestClientMgr.getInstance().unregisterInitiators(rest, dtMetaData, initiators);
+        } catch(Exception ex)
+        {
+           String errMsg = " Error while deleting App instance and initiator group ";
+            s_logger.error(DateraUtil.LOG_PREFIX + errMsg + ex.getMessage());
+            //throw new CloudRuntimeException(errMsg);
+            return false;
         }
-
-        List<String> initiators = DateraRestClientMgr.getInstance().getInitiatorGroupMembers(rest, dtMetaData);
-
-        if(DateraRestClientMgr.getInstance().deleteInitiatorGroup(rest, dtMetaData)){
-            s_logger.info(DateraUtil.LOG_PREFIX  + " Successfully deleted the initiator group");
-        } else {
-            String errMsg = "Could not delete the initiator group";
-            s_logger.error(DateraUtil.LOG_PREFIX  + errMsg);
-            throw new CloudRuntimeException(errMsg);
-        }
-
-        if(null != initiators)
-            DateraRestClientMgr.getInstance().unregisterInitiators(rest, dtMetaData, initiators);
-        //}
-        //catch(Exception ex)
-        //{
-        //   String errMsg = " Error while deleting App instance and initiator group ";
-        //    s_logger.error(DateraUtil.LOG_PREFIX + errMsg + ex.getMessage());
-        //    throw new CloudRuntimeException(errMsg);
-            //return false;
-        //}
         return true;
     }
 
@@ -718,8 +724,11 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
             throw new CloudRuntimeException("DateraShared provider does not support shrinking from " + storagePool.getCapacityBytes() + ", to requested capacity bytes " + newSize);
         }
 
-        if (newIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || (newIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME && newIops != 0)) {
+/*        if (newIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || (newIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME && newIops != 0)) {
             throw new IllegalArgumentException("Capacity IOPS must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME + " or 0");
+        }*/
+        if (capacityIops < 0) {
+            throw new IllegalArgumentException("'Capacity IOPS' " + capacityIops + " is less than minimum value 0");
         }
 
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);

@@ -93,20 +93,75 @@ public class DateraRestClient {
 
      return initiatorGroups;
  }
+
+ private boolean isIopsAvailable(String appInstance, String storageInstance, String volumeName){
+     String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
+     String response = "";
+     HttpGet getRequest = new HttpGet(url);
+     setHeaders(getRequest);
+     response = execute(getRequest);
+     //DateraModel.PerformancePolicy resp = new DateraModel.PerformancePolicy();
+     DateraModel.PerformancePolicy resp = gson.fromJson(response, DateraModel.PerformancePolicy.class);
+     if(resp != null && resp.totalIopsMax != 0){
+        s_logger.info("DateraRestClient.isIopsAvailable : true");
+        return true;
+     }
+     else {
+        DateraModel.DateraError err = gson.fromJson(response, DateraModel.DateraError.class);
+        if(err.message.contains("No data at")){
+           s_logger.info("DateraRestClient.isIopsAvailable : false");
+           return false;
+        }
+     }
+     return true;
+}
+
  public boolean updateQos(String appInstance, String storageInstance, String volumeName, long totalIOPS)
  {
+     String response = "";
      String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
-        HttpPut putRequest = new HttpPut(url);
-        setHeaders(putRequest);
+     if (totalIOPS == 0){
+         HttpDelete deleteRequest = new HttpDelete(url);
+         setHeaders(deleteRequest);
+         s_logger.info("Removing IOPS from datera storage");
+         response = execute(deleteRequest);
+     } else {
+          if(!isIopsAvailable(appInstance, storageInstance, volumeName)){
+              HttpPost request = new HttpPost(url);
+              DateraModel.PerformancePolicy policy = new DateraModel.PerformancePolicy(totalIOPS);
+              String payload = gson.toJson(policy);
+              setHeaders(request);
+              setPayload(request, payload);
+              s_logger.info("Updating the IOPS for the storage : payload : " + payload);
+              response = execute(request);
+          } else {
+             HttpPut request = new HttpPut(url);
+             DateraModel.PerformancePolicy policy = new DateraModel.PerformancePolicy(totalIOPS);
+             String payload = gson.toJson(policy);
+             setHeaders(request);
+             setPayload(request, payload);
+             s_logger.info("Updating the IOPS for the storage : payload : " + payload);
+             response = execute(request);
+          }
+     }
+     s_logger.info(DateraUtil.LOG_PREFIX + "DateraRestClient.updateQos response : "+ response);
+     DateraModel.PerformancePolicy resp = gson.fromJson(response, DateraModel.PerformancePolicy.class);
 
-        DateraModel.PerformancePolicy policy = new DateraModel.PerformancePolicy(totalIOPS);
-        String payload = gson.toJson(policy);
-        setPayload(putRequest, payload);
-        String response = execute(putRequest);
-        DateraModel.PerformancePolicy resp = gson.fromJson(response, DateraModel.PerformancePolicy.class);
-
-        if(null == resp) return false;
-        return resp.totalIopsMax == totalIOPS ? true : false;
+     if(resp != null && resp.totalIopsMax == totalIOPS){
+         return true;
+     } else if(resp == null){
+         return false;
+     } else {
+         DateraModel.DateraError err = gson.fromJson(response, DateraModel.DateraError.class);
+         if(!isIopsAvailable(appInstance, storageInstance, volumeName)){
+            return true;
+         }
+         s_logger.error(DateraUtil.LOG_PREFIX + "Error while setting up the max IOPS " + err.message + " " + err.erros);
+         if (err.message.contains("No data at")){
+             throw new CloudRuntimeException("No IOPS configured");
+         }
+         throw new CloudRuntimeException(err.message + "\n" + err.erros);
+     }
  }
 
  public DateraModel.AppModel getAppInstanceInfo(String appInstance)
@@ -173,17 +228,25 @@ public class DateraRestClient {
  public boolean setQos(String appInstance, String storageInstance, String volumeName, long totalIOPS)
  {
      String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
-        HttpPost postRequest = new HttpPost(url);
-        setHeaders(postRequest);
+     HttpPost postRequest = new HttpPost(url);
+     setHeaders(postRequest);
 
-        DateraModel.PerformancePolicy policy = new DateraModel.PerformancePolicy(totalIOPS);
-        String payload = gson.toJson(policy);
-        setPayload(postRequest, payload);
-        String response = execute(postRequest);
-        DateraModel.PerformancePolicy resp = gson.fromJson(response, DateraModel.PerformancePolicy.class);
+     DateraModel.PerformancePolicy policy = new DateraModel.PerformancePolicy(totalIOPS);
+     String payload = gson.toJson(policy);
+     setPayload(postRequest, payload);
+     String response = execute(postRequest);
+     s_logger.info(DateraUtil.LOG_PREFIX + "DateraRestClient.setQos response : "+ response);
+     DateraModel.PerformancePolicy resp = gson.fromJson(response, DateraModel.PerformancePolicy.class);
 
-        if(null == resp) return false;
-        return resp.totalIopsMax == totalIOPS ? true : false;
+     if(resp != null && resp.totalIopsMax == totalIOPS){
+         return true;
+     } else if(resp == null){
+         return false;
+     } else {
+         DateraModel.DateraError err = gson.fromJson(response, DateraModel.DateraError.class);
+         s_logger.error(DateraUtil.LOG_PREFIX + "Error while setting up the max IOPS " + err.message + " " + err.erros);
+         throw new CloudRuntimeException(err.message + "\n" + err.erros);
+     }
  }
  public boolean deleteInitiatorGroup(String groupName)
  {

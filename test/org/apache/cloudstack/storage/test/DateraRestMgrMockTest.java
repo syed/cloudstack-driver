@@ -120,12 +120,27 @@ public class DateraRestMgrMockTest {
 
         when(rest.registerInitiators(initiators)).thenReturn(regInitList);
         when(rest.createInitiatorGroup("test_init_grp_1", regInitList)).thenReturn(true);
+        
+        AppInstanceInfo.StorageInstance storageInfo = new AppInstanceInfo().new StorageInstance();
+        storageInfo.volumes = new AppInstanceInfo().new VolumeInstances();
+        storageInfo.volumes.volume1 = new AppInstanceInfo().new VolumeInfo();
+
+        storageInfo.name = DateraModel.defaultStorageName;
+        storageInfo.opState = DateraRestClient.OP_STATE_AVAILABLE;
+        storageInfo.volumes.volume1.name = DateraModel.defaultVolumeName;
+        storageInfo.volumes.volume1.opState = DateraRestClient.OP_STATE_AVAILABLE;
+
+        when(rest.getStorageInfo(appName, DateraModel.defaultStorageName)).thenReturn(storageInfo);
+
         List<String> initGroups = new ArrayList <String>();
         initGroups.add("test_init_grp_1");
         when(rest.updateStorageWithInitiator(appName, DateraModel.defaultStorageName, null, initGroups)).thenReturn(true);
 
-        restMgr.registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
-                DateraCommon.PASSWORD, appName, DateraModel.defaultStorageName, "test_init_grp_1", initiators, 10L);
+        assertTrue(restMgr.registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
+                DateraCommon.PASSWORD, appName, DateraModel.defaultStorageName, "test_init_grp_1", initiators, DateraUtil.PRIMARY_STORAGE_CREATION_TIMEOUT));
+        storageInfo.volumes.volume1.opState = "unavailable";
+        assertFalse(restMgr.registerInitiatorsAndUpdateStorageWithInitiatorGroup(rest, DateraCommon.MANAGEMENT_IP, DateraCommon.PORT, DateraCommon.USERNAME, 
+                DateraCommon.PASSWORD, appName, DateraModel.defaultStorageName, "test_init_grp_1", initiators, DateraUtil.PRIMARY_STORAGE_CREATION_TIMEOUT));
     }
     
     @Test

@@ -68,7 +68,17 @@ public class DateraRestClientMgr {
         String accessControlMode = DateraRestClient.ACCESS_CONTROL_MODE_ALLOW_ALL;
         int dtVolSize = DateraUtil.getVolumeSizeInGB(capacityBytes);
         rest.createVolume(appInstanceName, null, null, dtVolSize, replica, accessControlMode, networkPoolName);
-        rest.setQos(appInstanceName, storageInstanceName, volumeInstanceName, totalIOPS);
+        if(totalIOPS != 0) {
+            try {
+            if(!rest.setQos(appInstanceName, storageInstanceName, volumeInstanceName, totalIOPS)){
+                throw new CloudRuntimeException("Could not set the capacity IOPS");
+            }
+            } catch (Exception ex) {
+                rest.setAdminState(appInstanceName, false);
+                rest.deleteAppInstance(appInstanceName);
+                throw new CloudRuntimeException(ex.getMessage());
+            }
+        }
 
         AppInstanceInfo.StorageInstance storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
         int timeout = DateraUtil.VOLUME_CREATION_TIMEOUT;
@@ -76,9 +86,9 @@ public class DateraRestClientMgr {
         if(!storageInfo.opState.equals(DateraRestClient.OP_STATE_AVAILABLE) || !storageInfo.volumes.volume1.opState.equals(DateraRestClient.OP_STATE_AVAILABLE)) {
             while(timeout > 0) {
                 try {
-                    TimeUnit.SECONDS.sleep(DateraUtil.VOLUME_CREATION_WATING_INTERVAL);
+                    TimeUnit.SECONDS.sleep(DateraUtil.WATING_INTERVAL);
                 } catch (InterruptedException e) {}
-                timeout -= DateraUtil.VOLUME_CREATION_WATING_INTERVAL;
+                timeout -= DateraUtil.WATING_INTERVAL;
                 storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
                 if(storageInfo.opState.equals(DateraRestClient.OP_STATE_AVAILABLE) && storageInfo.volumes.volume1.opState.equals(DateraRestClient.OP_STATE_AVAILABLE)){
                     volumeCreationSuccess = true;
@@ -94,12 +104,13 @@ public class DateraRestClientMgr {
 
         String err = "";
         if(!storageInfo.volumes.volume1.name.equals(volumeInstanceName)) {
-           err = String.format("Could not create volume /%s/%s/%s ",appInstanceName, storageInstanceName, volumeInstanceName);
+            err  = "Unable to create the primary storage.\n Reason : Could not create the volume";
+            s_logger.error(DateraUtil.LOG_PREFIX + err);
            volumeCreationSuccess = false;
         }
         else if(!volumeCreationSuccess) {
-            err = String.format("Unable to create primary storage %s \n Reason: Volume's  opstate = %s /%s/%s/%s ",appInstanceName,
-                          storageInfo.opState, appInstanceName, storageInstanceName, volumeInstanceName);
+            err = String.format("Unable to create the primary storage. \n Reason : Volumes opstate : %s", storageInfo.opState);
+            s_logger.error(DateraUtil.LOG_PREFIX + err);
             volumeCreationSuccess = false;
         }
         if(!volumeCreationSuccess)
@@ -122,10 +133,13 @@ public class DateraRestClientMgr {
             rest = new DateraRestClient(managementIP, managementPort, managementUsername, managementPassword);
         }
         registerInitiators(rest,null,initiators);
+        s_logger.debug("registred the initiators");
         List<String> listIqns = new ArrayList<String>(initiators.values());
         createInitiatorGroup(rest,null,initiatorGroupName, listIqns);
+        s_logger.debug("Created the initiator group");
         List<String> initiatorGroups = new ArrayList<String>();
         initiatorGroups.add(initiatorGroupName);
+        s_logger.info("Updating storage with initiators.");
         if(false == rest.updateStorageWithInitiator(appInstanceName, storageInstanceName, null, initiatorGroups))
         {
             if(allowThrowException)
@@ -137,13 +151,46 @@ public class DateraRestClientMgr {
                 return false;
             }
         }
-
-        try {
+/*        try {
             s_logger.info("Waiting for the datera to setup everything , "+timeout);
             Thread.sleep(timeout);
         } catch (InterruptedException e) {
+        }*/
+        long watingInterval = DateraUtil.WATING_INTERVAL*1000;
+        long iterator = 0;
+        AppInstanceInfo.StorageInstance storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
+        if(!storageInfo.opState.equals(DateraRestClient.OP_STATE_AVAILABLE) || !storageInfo.volumes.volume1.opState.equals(DateraRestClient.OP_STATE_AVAILABLE)) {
+            while((DateraUtil.PRIMARY_STORAGE_CREATION_TIMEOUT - iterator) > 0) {
+                try {
+                    s_logger.info(DateraUtil.LOG_PREFIX + " Wating for " + watingInterval + " milisec for Datera to setup everything");
+                    Thread.sleep(watingInterval);
+                } catch (InterruptedException e) {
+                }
+                iterator += watingInterval;
+                storageInfo = rest.getStorageInfo(appInstanceName, storageInstanceName);
+                if(storageInfo.opState.equals(DateraRestClient.OP_STATE_AVAILABLE) && storageInfo.volumes.volume1.opState.equals(DateraRestClient.OP_STATE_AVAILABLE)){
+                    s_logger.debug("storage op_stat : " + storageInfo.opState + ", Volume op_state : " + storageInfo.volumes.volume1.opState);
+                    try {
+                        s_logger.info("Wating for " + timeout + " milisec to setup everyting on Datera");
+                        Thread.sleep(timeout);
+                    } catch (InterruptedException e) {
+                    }
+                    return true;
+                }
+            }
+            if(iterator >= DateraUtil.PRIMARY_STORAGE_CREATION_TIMEOUT && (!storageInfo.opState.equals(DateraRestClient.OP_STATE_AVAILABLE) || !storageInfo.volumes.volume1.opState.equals(DateraRestClient.OP_STATE_AVAILABLE))) {
+                s_logger.debug("storage op_stat : " + storageInfo.opState + ", Volume op_state : " + storageInfo.volumes.volume1.opState);
+                return false;
+            }
         }
+        try {
+            s_logger.info("Wating for " + timeout + " milisec to setup everyting on Datera");
+            Thread.sleep(timeout);
+        } catch (InterruptedException e) {
+        }
+        s_logger.debug("storage op_stat : " + storageInfo.opState + ", Volume op state : " + storageInfo.volumes.volume1.opState);
         return true;
+
     }
     public boolean deleteAppInstance(DateraRestClient rest,
         DateraUtil.DateraMetaData dtMetaData) {
