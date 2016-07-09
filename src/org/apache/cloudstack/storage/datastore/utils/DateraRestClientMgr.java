@@ -268,7 +268,13 @@ public class DateraRestClientMgr {
         }
         int dtVolumeSize = getDateraCompatibleVolumeInGB(capacityBytes);
         rest.setAdminState(dtMetaData.appInstanceName, false);
+        s_logger.debug("Resizing the volume capacity to " + dtVolumeSize);
         ret = rest.resizeVolume(dtMetaData.appInstanceName, dtMetaData.storageInstanceName, DateraModel.defaultVolumeName, dtVolumeSize);
+        if (ret) {
+            s_logger.info("Successfully update the volume size to " + dtVolumeSize);
+        } else {
+            s_logger.warn("Unable to update the volume to " + dtVolumeSize);
+        }
         rest.setAdminState(dtMetaData.appInstanceName, true);
         return ret;
     }

@@ -290,7 +290,7 @@ public class DateraRestClientTests {
     	// Invalid total IOPS
     	assertFalse(client.setQos(APPINSTNAME, "storage-3", "volume-8", 10000000000L));
     }
-    
+
     @Test
     public void testGetVolumes() {
     	
