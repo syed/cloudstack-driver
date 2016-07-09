@@ -102,7 +102,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     //     update the VAG to contain all IQNs of the hosts (ModifyVolumeAccessGroup)
     //     if the ID of volumeInfo in not in the VAG, add it (ModifyVolumeAccessGroup)
     // if the VAG doesn't exist, create it with the IQNs of the hosts and the ID of volumeInfo (CreateVolumeAccessGroup)
-    @Override
+    //@Override This method is not overriden in CS4.7
     public synchronized boolean connectVolumeToHost(VolumeInfo volumeInfo, Host host, DataStore dataStore)
     {
         if (volumeInfo == null || host == null || dataStore == null) {
@@ -178,7 +178,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     // get the VAG associated with volumeInfo's cluster, if any (ListVolumeAccessGroups) // might not exist if using CHAP
     // if the VAG exists
     //     remove the ID of volumeInfo from the VAG (ModifyVolumeAccessGroup)
-    @Override
+    //@Override This method is not overriden in CS4.7
     public synchronized void disconnectVolumeFromHost(VolumeInfo volumeInfo, Host host, DataStore dataStore)
     {
         if (volumeInfo == null || host == null || dataStore == null) {
@@ -459,8 +459,8 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     }
 
     @Override
-    public void revertSnapshot(SnapshotInfo snapshot, AsyncCompletionCallback<CommandResult> callback) {
-        throw new UnsupportedOperationException();
+    public void revertSnapshot(SnapshotInfo snapshot, SnapshotInfo snapshotOnPrimaryStore, AsyncCompletionCallback<CommandResult> callback) {
+        throw new UnsupportedOperationException("Reverting not supported. Create a template or volume based on the snapshot instead.");
     }
 
     @Override
@@ -506,6 +506,12 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         callback.complete(result);
     }
 
+    @Override
+    public long getUsedIops(StoragePool arg0) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
     private void verifySufficientIopsForStoragePool(long storagePoolId, long volumeId, long newMinIops) {
         StoragePoolVO storagePool = _storagePoolDao.findById(storagePoolId);
         VolumeVO volume = _volumeDao.findById(volumeId);
@@ -521,6 +527,61 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             if (usedIops + diffInMinIops > capacityIops) {
                 throw new CloudRuntimeException("Insufficient number of IOPS available in this storage pool");
             }
+        }
+    }
+
+    private long getDateraVolumeId(DataObject dataObject) {
+        if(dataObject.getType() == DataObjectType.VOLUME) {
+            return Long.parseLong(((VolumeInfo)dataObject).getFolder());
+        }
+        if (dataObject.getType() == DataObjectType.SNAPSHOT) {
+            throw new CloudRuntimeException("Could not get snapshot id");
+            /*SnapshotDetailsVO snapshotDetails = _snapshotDetailsDao.findDetail(dataObject.getId(), DateraUtil.VOLUME_ID);
+            if (snapshotDetails == null || snapshotDetails.getValue() == null) {
+                throw new CloudRuntimeException("Unable to locate the volume ID associated with the following snapshot ID: " + dataObject.getId());
+            }
+            return Long.parseLong(snapshotDetails.getValue());*/
+        }
+
+        throw new CloudRuntimeException("Invalid DataObjectType (" + dataObject.getType() + ") passed to getDateraVolumeId(DataObject)");
+    }
+
+    @Override
+    public boolean grantAccess(DataObject dataObject, Host host, DataStore dataStore) {
+
+        if (dataObject == null || host == null || dataStore == null) {
+            return false;
+        }
+        s_logger.info("Begin connectVolumeToHost host iqn = "+host.getStorageUrl());
+        long dtVolumeId = getDateraVolumeId(dataObject);
+        long clusterId = host.getClusterId();
+        long storagePoolId = dataStore.getId();
+
+        List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
+
+        if (!DateraUtil.hostsSupport_iScsi(hosts)) {
+           return false;
+        }
+
+        if(null == host.getStorageUrl())
+        {
+            throw new CloudRuntimeException("Host iqn not available, cannot register the host");
+        }
+        DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
+        registerInitiatorsOnDatera(dtMetaData.mangementIP,dtMetaData.managementPort,dtMetaData.managementUserName,dtMetaData.managementPassword,dtMetaData.appInstanceName,dtMetaData.storageInstanceName,host.getStorageUrl());
+        s_logger.info("End connectVolumeToHost ");
+        return true;
+
+    }
+
+    @Override
+    public void revokeAccess(DataObject dataObject, Host host, DataStore dataStore) {
+        if (dataObject == null || host == null || dataStore == null) {
+            return;
+        }
+        s_logger.info("Begin revoke Access : " + host.getStorageUrl());
+        if(host.getStorageUrl() == null) {
+            throw new CloudRuntimeException("Host IQN not available, Can not unregister the host");
         }
     }
 }

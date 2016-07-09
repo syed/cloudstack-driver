@@ -71,7 +71,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
     @Inject private StoragePoolDetailsDao _storagePoolDetailsDao;
     @Inject private StoragePoolHostDao _storagePoolHostDao;
     @Inject protected TemplateManager _tmpltMgr;
-    //private Long _timeout=10000L;
     private long _timeout = 5000L;
 
     // invoked to add primary storage that is based on the Datera plug-in
@@ -110,9 +109,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
                     + DateraUtil.MAX_CAPACITY_BYTES + " bytes");
         }
 
-        /*if (capacityIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || (capacityIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME && capacityIops != 0)) {
-            throw new IllegalArgumentException("'Capacity IOPS' must be between " + DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and " + DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME);
-        }*/
         if (capacityIops == null) {
             throw new CloudRuntimeException("Capacity IOPS can not be blank");
         }
@@ -727,9 +723,6 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 /*        if (newIops > DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME || (newIops < DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME && newIops != 0)) {
             throw new IllegalArgumentException("Capacity IOPS must be between "+ DateraUtil.MIN_TOTAL_IOPS_PER_VOLUME + " and "+ DateraUtil.MAX_TOTAL_IOPS_PER_VOLUME + " or 0");
         }*/
-        if (capacityIops < 0) {
-            throw new IllegalArgumentException("'Capacity IOPS' " + capacityIops + " is less than minimum value 0");
-        }
 
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePool.getId(), _storagePoolDetailsDao);
         DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
@@ -737,14 +730,24 @@ public class DateraSharedPrimaryDataStoreLifeCycle implements PrimaryDataStoreLi
 
         if(newSize != storagePool.getCapacityIops())
         {
+            s_logger.debug("Updating primary storage capacity bytes");
             if(false == DateraRestClientMgr.getInstance().updatePrimaryStorageCapacityBytes(rest, dtMetaData, newSize))
                 throw new CloudRuntimeException("Could not update storage capacity bytes");
         }
         if(newIops != storagePool.getCapacityIops())
         {
+            s_logger.debug("Updating primary storage IOPS");
             if(false == DateraRestClientMgr.getInstance().updatePrimaryStorageIOPS(rest, dtMetaData, newIops))
                 throw new CloudRuntimeException("Could not update storage IOPS");
         }
     }
 
+    @Override
+    public void enableStoragePool(DataStore dataStore) {
+        _primaryDataStoreHelper.enable(dataStore);
+    }
+    @Override
+    public void disableStoragePool(DataStore dataStore) {
+        _primaryDataStoreHelper.disable(dataStore);
+    }
 }

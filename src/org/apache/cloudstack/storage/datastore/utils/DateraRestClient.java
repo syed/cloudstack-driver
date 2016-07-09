@@ -153,9 +153,9 @@ public class DateraRestClient {
          return false;
      } else {
          DateraModel.DateraError err = gson.fromJson(response, DateraModel.DateraError.class);
-         if(!isIopsAvailable(appInstance, storageInstance, volumeName)){
+/*         if(!isIopsAvailable(appInstance, storageInstance, volumeName)){
             return true;
-         }
+         }*/
          s_logger.error(DateraUtil.LOG_PREFIX + "Error while setting up the max IOPS " + err.message + " " + err.erros);
          if (err.message.contains("No data at")){
              throw new CloudRuntimeException("No IOPS configured");
