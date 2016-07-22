@@ -119,12 +119,14 @@ public class DateraRestClient {
  public boolean updateQos(String appInstance, String storageInstance, String volumeName, long totalIOPS)
  {
      String response = "";
+     boolean iopsRemoved = false;
      String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/performance_policy", appInstance, storageInstance, volumeName);
      if (totalIOPS == 0){
          HttpDelete deleteRequest = new HttpDelete(url);
          setHeaders(deleteRequest);
          s_logger.info("Removing IOPS from datera storage");
          response = execute(deleteRequest);
+         iopsRemoved = true;
      } else {
           if(!isIopsAvailable(appInstance, storageInstance, volumeName)){
               HttpPost request = new HttpPost(url);
@@ -149,13 +151,12 @@ public class DateraRestClient {
 
      if(resp != null && resp.totalIopsMax == totalIOPS){
          return true;
+     } else if(resp != null && iopsRemoved) {
+         return true;
      } else if(resp == null){
          return false;
      } else {
          DateraModel.DateraError err = gson.fromJson(response, DateraModel.DateraError.class);
-/*         if(!isIopsAvailable(appInstance, storageInstance, volumeName)){
-            return true;
-         }*/
          s_logger.error(DateraUtil.LOG_PREFIX + "Error while setting up the max IOPS " + err.message + " " + err.erros);
          if (err.message.contains("No data at")){
              throw new CloudRuntimeException("No IOPS configured");
