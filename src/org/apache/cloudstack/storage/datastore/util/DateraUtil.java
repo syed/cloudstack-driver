@@ -43,6 +43,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
@@ -54,6 +55,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.UUID;
+
 
 public class DateraUtil {
 
@@ -114,6 +116,7 @@ public class DateraUtil {
     private String password;
 
     private static final String SCHEME_HTTP = "http";
+    private static final int UUID_LENGTH = 8;
 
     public DateraUtil(String managementIp, int managementPort, String username, String password) {
         this.managementPort = managementPort;
@@ -931,6 +934,22 @@ public class DateraUtil {
         }
 
         return tokens[1].trim();
+    }
+
+    /**
+     * Generate random uuid
+     *
+     * @param seed
+     * @param length ( default to 8 )
+     * @return String uuid
+     */
+    public static String generateUUID(String seed) {
+        int length = UUID_LENGTH;
+        // creating UUID
+        UUID uid = UUID.fromString(seed);
+        String uuid= String.valueOf(uid.randomUUID()).substring(0, length);
+
+        return uuid;
     }
 
 

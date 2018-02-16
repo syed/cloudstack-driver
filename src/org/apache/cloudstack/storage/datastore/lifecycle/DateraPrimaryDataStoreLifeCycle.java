@@ -98,6 +98,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         String clusterAdminUsername = DateraUtil.getValue(DateraUtil.CLUSTER_ADMIN_USERNAME, url);
         String clusterAdminPassword = DateraUtil.getValue(DateraUtil.CLUSTER_ADMIN_PASSWORD, url);
         String uuid;
+        String randomString;
 
         PrimaryDataStoreParameters parameters = new PrimaryDataStoreParameters();
 
@@ -110,8 +111,11 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
                 throw new CloudRuntimeException("The Zone ID must be specified.");
             }
             ClusterVO cluster = _clusterDao.findById(clusterId);
-            uuid = DateraUtil.PROVIDER_NAME + "_" + cluster.getUuid() + "_" + storageVip + "_" + clusterAdminUsername + "_" + numReplicas + "_" + volPlacement;
-            s_logger.debug("Setting Datera cluster-wide primary storage uuid to " + uuid);
+            String clusterUuid = cluster.getUuid();
+            randomString = DateraUtil.generateUUID(clusterUuid);
+            //uuid = DateraUtil.PROVIDER_NAME + "_" + cluster.getUuid() + "_" + storageVip + "_" + clusterAdminUsername + "_" + numReplicas + "_" + volPlacement;
+            uuid = DateraUtil.PROVIDER_NAME + "_" + clusterUuid + "_" + randomString;
+            s_logger.debug("Datera - Setting Datera cluster-wide primary storage uuid to " + uuid);
             parameters.setPodId(podId);
             parameters.setClusterId(clusterId);
 
@@ -125,8 +129,12 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         // sets the uuid with zoneid in it
         else {
             DataCenterVO zone = zoneDao.findById(zoneId);
-            uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storageVip + "_" + clusterAdminUsername + "_" + numReplicas + "_" + volPlacement;
-            s_logger.debug("Setting Datera zone-wide primary storage uuid to " + uuid);
+            String zoneUuid = zone.getUuid();
+            randomString = DateraUtil.generateUUID(zoneUuid);
+            //uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storageVip + "_" + clusterAdminUsername + "_" + numReplicas + "_" + volPlacement;
+            uuid = DateraUtil.PROVIDER_NAME + "_" + zoneUuid + "_" + randomString;
+
+            s_logger.debug("Datera - Setting Datera zone-wide primary storage uuid to " + uuid);
         }
         if (capacityBytes == null || capacityBytes <= 0) {
             throw new IllegalArgumentException("'capacityBytes' must be present and greater than 0.");
