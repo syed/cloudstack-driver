@@ -394,6 +394,15 @@ public class DateraObject {
         }
     }
 
+
+    public static class VolumeSnapshotRestore{
+
+        @SerializedName("restore_point")
+        private String restorePoint;
+
+        VolumeSnapshotRestore(String restorePoint) { this.restorePoint=restorePoint;}
+    }
+
     public static class DateraError extends Exception {
 
         private String name;

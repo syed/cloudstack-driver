@@ -82,6 +82,10 @@ public class DateraHostListener implements HypervisorHostListener {
 
         HostVO host = _hostDao.findById(hostId);
 
+        if (host == null) {
+            s_logger.error("Failed to add host by HostListener as host was not found with id : " + hostId);
+            return false;
+        }
         StoragePoolHostVO storagePoolHost = storagePoolHostDao.findByPoolHost(storagePoolId, hostId);
 
         if (storagePoolHost == null) {
@@ -94,6 +98,7 @@ public class DateraHostListener implements HypervisorHostListener {
             handleXenServer(host.getClusterId(), host.getId(), storagePoolId);
         }
         else if (host.getHypervisorType().equals(HypervisorType.KVM)) {
+            //handleKVM(host.getClusterId(), host.getId(), storagePoolId);
             handleKVM(hostId, storagePoolId);
         }
 
@@ -208,6 +213,20 @@ public class DateraHostListener implements HypervisorHostListener {
         }
     }
 
+    private void handleKVM(long clusterId, long hostId, long storagePoolId) {
+        List<String> storagePaths = getStoragePaths(clusterId, storagePoolId);
+
+        StoragePool storagePool = (StoragePool)_dataStoreMgr.getDataStore(storagePoolId, DataStoreRole.Primary);
+
+        for (String storagePath : storagePaths) {
+            ModifyStoragePoolCommand cmd = new ModifyStoragePoolCommand(true, storagePool);
+
+            cmd.setStoragePath(storagePath);
+
+            sendModifyStoragePoolCommand(cmd, storagePool, hostId);
+        }
+    }
+
     private void handleKVM(long hostId, long storagePoolId) {
         StoragePool storagePool = (StoragePool)_dataStoreMgr.getDataStore(storagePoolId, DataStoreRole.Primary);
 
@@ -231,7 +250,7 @@ public class DateraHostListener implements HypervisorHostListener {
 
                     Long hostIdForVm = vmInstance.getHostId() != null ? vmInstance.getHostId() : vmInstance.getLastHostId();
 
-                    if (hostIdForVm != null) {
+                    if (hostIdForVm != null ) {
                         HostVO hostForVm = _hostDao.findById(hostIdForVm);
 
                         if (hostForVm.getClusterId().equals(clusterId)) {

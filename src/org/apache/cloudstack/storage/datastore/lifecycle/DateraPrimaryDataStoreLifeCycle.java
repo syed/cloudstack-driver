@@ -89,6 +89,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         String tags = (String)dsInfos.get("tags");
         @SuppressWarnings("unchecked")
         Map<String, String> details = (Map<String, String>)dsInfos.get("details");
+        String domainName = details.get("domainname");
 
         String storageVip = DateraUtil.getStorageVip(url);
 
@@ -143,6 +144,12 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         if (capacityIops == null || capacityIops <= 0) {
             throw new IllegalArgumentException("'capacityIops' must be present and greater than 0.");
         }
+
+        if (domainName == null) {
+            domainName = "ROOT";
+            s_logger.debug("setting the domain to ROOT");
+        }
+        s_logger.debug("Datera - domainName: " + domainName);
 
         parameters.setHost(storageVip);
         parameters.setPort(storagePort);
@@ -371,7 +378,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
     }
 
     private static boolean isSupportedHypervisorType(HypervisorType hypervisorType) {
-        return HypervisorType.XenServer.equals(hypervisorType) || HypervisorType.VMware.equals(hypervisorType);
+        return HypervisorType.XenServer.equals(hypervisorType) || HypervisorType.VMware.equals(hypervisorType) || HypervisorType.KVM.equals(hypervisorType);
     }
 
     private HypervisorType getHypervisorType(long hostId) {

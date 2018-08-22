@@ -113,7 +113,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         mapCapabilities.put(DataStoreCapabilities.STORAGE_SYSTEM_SNAPSHOT.toString(), Boolean.TRUE.toString());
         mapCapabilities.put(DataStoreCapabilities.CAN_CREATE_VOLUME_FROM_SNAPSHOT.toString(), Boolean.TRUE.toString());
         mapCapabilities.put(DataStoreCapabilities.CAN_CREATE_VOLUME_FROM_VOLUME.toString(), Boolean.TRUE.toString());
-        //mapCapabilities.put(DataStoreCapabilities.CAN_REVERT_VOLUME_TO_SNAPSHOT.toString(), Boolean.TRUE.toString());
+        mapCapabilities.put(DataStoreCapabilities.CAN_REVERT_VOLUME_TO_SNAPSHOT.toString(), Boolean.TRUE.toString());
 
         return mapCapabilities;
     }
@@ -171,6 +171,8 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     @Override
     public boolean grantAccess(DataObject dataObject, Host host, DataStore dataStore) {
 
+        s_logger.debug("Datera - grantAccess() called");
+
         Preconditions.checkArgument(dataObject != null, "'dataObject' should not be 'null'");
         Preconditions.checkArgument(host != null, "'host' should not be 'null'");
         Preconditions.checkArgument(dataStore != null, "'dataStore' should not be 'null'");
@@ -202,16 +204,18 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             List<HostVO> hosts = _hostDao.findByClusterId(clusterId);
 
             if (!DateraUtil.hostsSupport_iScsi(hosts)) {
+                s_logger.debug("Datera - hostsSupport_iScsi() :Host does NOT support iscsci");
                 return false;
             }
 
             // We don't have the initiator group, create one
             String initiatorGroupName = DateraUtil.INITIATOR_GROUP_PREFIX +  "-" + cluster.getUuid();
+            s_logger.debug("Datera - Will use initiator group " + String.valueOf(initiatorGroupName));
 
             initiatorGroup = DateraUtil.getInitiatorGroup(conn, initiatorGroupName);
 
             if (initiatorGroup == null) {
-
+                s_logger.debug("Datera - create initiator group " + String.valueOf(initiatorGroupName));
                 initiatorGroup = DateraUtil.createInitiatorGroup(conn, initiatorGroupName);
                 //Save it to the DB
                 ClusterDetailsVO clusterDetail = new ClusterDetailsVO(clusterId, initiatorGroupKey, initiatorGroupName);
@@ -221,12 +225,13 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 initiatorGroup = DateraUtil.getInitiatorGroup(conn, initiatorGroupName);
             }
 
-            Preconditions.checkNotNull(initiatorGroup);
+            Preconditions.checkNotNull(initiatorGroup, "initiatorGroup should not be Null");
 
             // We create an initiator for every host in this cluster and add it to the initator group
             addClusterHostsToInitiatorGroup(conn, clusterId, initiatorGroupName);
 
             //assgin the initiatorgroup to appInstance
+
             if (!isInitiatorGroupAssignedToAppInstance(conn, initiatorGroup, appInstance)) {
                 DateraUtil.assignGroupToAppInstance(conn, initiatorGroupName, appInstanceName);
                 int retries = DateraUtil.DEFAULT_RETRIES;
@@ -234,8 +239,15 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                     Thread.sleep(DateraUtil.POLL_TIMEOUT_MS);
                     retries--;
                 }
+
+                Preconditions.checkArgument(isInitiatorGroupAssignedToAppInstance(conn, initiatorGroup, appInstance),
+                        "Initgroup is not assigned to appinstance");
                 //FIXME: Sleep anyways
-                Thread.sleep(9000); // ms
+                s_logger.debug("Datera - sleep 20 sec for ACL to be applied");
+
+                Thread.sleep(20000); // ms
+                s_logger.debug("Datera - Initiator group " + String.valueOf(initiatorGroupName) + " is assigned to "+ appInstanceName);
+
             }
 
             return true;
@@ -259,17 +271,19 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             String iqn = host.getStorageUrl();
 
             DateraObject.Initiator initiator = DateraUtil.getInitiator(conn, iqn);
-
-            //initiator not found, create it
+            String initiatorName = "";
+            //initiator can not be found, create it
             if (initiator == null) {
 
-                String initiatorName = DateraUtil.INITIATOR_PREFIX + "-" + host.getUuid();
+                initiatorName = DateraUtil.INITIATOR_PREFIX + "-" + host.getUuid();
                 initiator = DateraUtil.createInitiator(conn, initiatorName, iqn);
-            }
+                s_logger.debug("Datera - Initiator " + initiatorName + " with " + iqn + "added ");
 
+            }
             Preconditions.checkNotNull(initiator);
 
             if (!DateraUtil.isInitiatorPresentInGroup(initiator, initiatorGroup)) {
+                s_logger.debug("Datera - Add " + initiatorName + " to " + initiatorGroupName);
                 DateraUtil.addInitiatorToGroup(conn, initiator.getPath(), initiatorGroupName);
             }
         }
@@ -311,6 +325,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
      */
     @Override
     public void revokeAccess(DataObject dataObject, Host host, DataStore dataStore) {
+        s_logger.debug("Datera - revokeAccess() called");
 
         Preconditions.checkArgument(dataObject != null, "'dataObject' should not be 'null'");
         Preconditions.checkArgument(host != null, "'host' should not be 'null'");
@@ -386,19 +401,54 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         return getDataObjectSizeIncludingHypervisorSnapshotReserve(templateInfo, storagePool);
     }
 
+    /**
+     * Returns Datera appInstanceName
+     * @param dataObject volume or template
+     * @return Derived Datera appInstanceName based on dataObject,
+     *        Eg. CS-V-ROOT-123-6db58e3f-14c4-45ac-95e9-60e3a00ce7d0
+     */
     private String getAppInstanceName(DataObject dataObject) {
+
         ArrayList<String> name = new ArrayList<>();
 
-        name.add(DateraUtil.APPINSTANCE_PREFIX);
-        name.add(dataObject.getType().toString());
-        name.add(dataObject.getUuid());
+        name.add(DateraUtil.APPINSTANCE_PREFIX);    //CS
 
-        if (dataObject.getType() == DataObjectType.TEMPLATE){
-            //For cached templates, we will also add the pool ID
-            name.add(String.valueOf(dataObject.getDataStore().getId()));
+        String dataObjectTypeString = dataObject.getType().name(); //TEMPLATE, VOLUME, SNAPSHOT
+        String dataObjectTypeBrief;
+        dataObjectTypeBrief = org.apache.commons.lang.StringUtils.substring(dataObjectTypeString, 0, 1);
+        name.add(dataObjectTypeBrief); // T, V
+
+        switch (dataObject.getType()) {
+            case TEMPLATE:
+                TemplateInfo templateInfo = (TemplateInfo)dataObject;
+                String templateName=templateInfo.getUniqueName();
+                name.add(templateName);
+                name.add(dataObject.getUuid());             //6db58e3f-14c4-45ac-95e9-60e3a00ce7d0
+
+                //For cached templates, we will also add the storage pool ID
+                name.add(String.valueOf(dataObject.getDataStore().getId()));
+                //long domainId = dataObject.getDomainId();
+                //s_logger.debug("Datera - template domainId : " + String.valueOf(domainId));
+                break;
+
+            case VOLUME:
+                VolumeInfo volumeInfo = (VolumeInfo)dataObject;
+                String volumeName = volumeInfo.getName();
+                name.add(String.valueOf(volumeName));
+                name.add(dataObject.getUuid());             //6db58e3f-14c4-45ac-95e9-60e3a00ce7d0
+
+                VolumeVO volumeVo = _volumeDao.findById(dataObject.getId());
+                long domainId = volumeVo.getDomainId();
+                // String volumeName = volumeVo.getName();
+                s_logger.debug("Datera - domainId : " + String.valueOf(domainId));
+                // name.add(String.valueOf(domainId));
+                s_logger.debug("Datera - volumeName : " + volumeName);
+                break;
+
         }
 
-        return StringUtils.join("-", name.toArray());
+        String appInstanceName=StringUtils.join("-", name.toArray());
+        return  org.apache.commons.lang.StringUtils.substring(appInstanceName, 0, DateraUtil.APPINSTANCE_MAX_LENTH);
     }
 
     // Not being used right now as Datera doesn't support min IOPS
@@ -667,16 +717,26 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         long csTemplateId = getCsIdForCloning(volumeInfo.getId(), "cloneOfTemplate");
         s_logger.debug("Datera - csTemplateId is "+ String.valueOf(csTemplateId));
 
+        VolumeVO volumeVo = _volumeDao.findById(volumeInfo.getId());
+        long domainId = volumeVo.getDomainId();
+        String volumeName = volumeVo.getName();
+        s_logger.debug("Datera - domainId : "+ String.valueOf(domainId));
+        s_logger.debug("Datera - volumeName : "+ volumeName);
+
+
         try {
 
             if (csSnapshotId > 0) {
                 //creating volume from snapshot. The snapshot could either be a native snapshot
                 //or another volume.
+                s_logger.debug("Datera - creating volume from snapshot ");
                 appInstance = createDateraClone(conn, csSnapshotId, volumeInfo, storagePoolId, DataObjectType.SNAPSHOT);
 
             } else if (csTemplateId > 0) {
 
                 // create volume from template. Invoked when creating new ROOT volume
+                s_logger.debug("Datera - creating volume from template ");
+
                 appInstance = createDateraClone(conn, csTemplateId, volumeInfo, storagePoolId, DataObjectType.TEMPLATE);
                 String appInstanceName = appInstance.getName();
 
@@ -703,6 +763,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             } else {
                 //Just create a standard volume
+                s_logger.debug("Datera - creating a standard volume ");
                 appInstance = createDateraVolume(conn, volumeInfo, storagePoolId);
             }
         } catch(UnsupportedEncodingException| DateraObject.DateraError e) {
@@ -720,15 +781,14 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         String iqn = appInstance.getIqn();
         String iqnPath = DateraUtil.generateIqnPath(iqn);
 
-        VolumeVO volume = _volumeDao.findById(volumeInfo.getId());
-        volume.set_iScsiName(iqnPath);
-        volume.setFolder(appInstance.getName());
-        volume.setPoolType(Storage.StoragePoolType.IscsiLUN);
-        volume.setPoolId(storagePoolId);
+        volumeVo.set_iScsiName(iqnPath);
+        volumeVo.setFolder(appInstance.getName());
+        volumeVo.setPoolType(Storage.StoragePoolType.IscsiLUN);
+        volumeVo.setPoolId(storagePoolId);
 
-        _volumeDao.update(volume.getId(), volume);
+        _volumeDao.update(volumeVo.getId(), volumeVo);
 
-        updateVolumeDetails(volume.getId(), appInstance.getSize());
+        updateVolumeDetails(volumeVo.getId(), appInstance.getSize());
 
         StoragePoolVO storagePool = _storagePoolDao.findById(storagePoolId);
 
@@ -807,6 +867,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             // Clone volume from a snapshot
             if (snapshotDetails != null && snapshotDetails.getValue() != null) {
+                s_logger.debug("Datera - Clone volume from a snapshot");
 
                 appInstance = DateraUtil.cloneAppInstanceFromSnapshot(conn, clonedAppInstanceName, snapshotDetails.getValue());
 
@@ -825,11 +886,14 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             } else {
 
                 //Clone volume from an appInstance
+                s_logger.debug("Datera - Clone volume from an appInstance");
+
                 snapshotDetails = snapshotDetailsDao.findDetail(dataObjectId, DateraUtil.VOLUME_ID);
                 baseAppInstanceName = snapshotDetails.getValue();
 
             }
         } else if (dataType == DataObjectType.TEMPLATE) {
+            s_logger.debug("Datera - Clone volume from a template");
 
             VMTemplateStoragePoolVO templatePoolRef = tmpltPoolDao.findByPoolTemplate(storagePoolId, dataObjectId);
 
@@ -863,8 +927,9 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             appInstance = DateraUtil.getAppInstance(conn, clonedAppInstanceName);
         }
         if (appInstance == null){
-            throw new CloudRuntimeException("Unable to create an app instance from snapshot " + volumeInfo.getId() + " type " + dataType);
+            throw new CloudRuntimeException("Unable to create an app instance from snapshot or template " + volumeInfo.getId() + " type " + dataType);
         }
+        s_logger.debug("Datera - Cloned " + baseAppInstanceName + " to " + clonedAppInstanceName);
 
         return appInstance;
     }
@@ -880,6 +945,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
      * @param storagePoolId primary store ID
      */
     private void createTempVolume(SnapshotInfo snapshotInfo, long storagePoolId) {
+        s_logger.debug("Datera - createTemplateVolume() from snapshot called");
 
         long csSnapshotId = snapshotInfo.getId();
 
@@ -945,7 +1011,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
      * @return IQN of the template volume
      */
     public String createTemplateVolume(TemplateInfo templateInfo, long storagePoolId) {
-        s_logger.debug("Datera - createTemplateVolume() called");
+        s_logger.debug("Datera - createTemplateVolume() as cache template called");
 
         verifySufficientBytesForStoragePool(templateInfo, storagePoolId);
 
@@ -960,8 +1026,10 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             int templateSizeGb = DateraUtil.bytesToGb(templateSizeBytes);
             int templateIops = DateraUtil.MAX_IOPS;
             int replicaCount = getNumReplicas(storagePoolId);
+            String appInstanceName = getAppInstanceName(templateInfo);
 
-            DateraObject.AppInstance appInstance = DateraUtil.createAppInstance(conn, getAppInstanceName(templateInfo),
+            s_logger.debug("Datera - cached VM template app_instance: " + appInstanceName);
+            DateraObject.AppInstance appInstance = DateraUtil.createAppInstance(conn, appInstanceName,
                     templateSizeGb, templateIops, replicaCount);
 
             if (appInstance == null) {
@@ -1009,8 +1077,6 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     public void createAsync(DataStore dataStore, DataObject dataObject, AsyncCompletionCallback<CreateCmdResult> callback) {
         String iqn = null;
         String errMsg = null;
-
-
 
         try {
             if (dataObject.getType() == DataObjectType.VOLUME) {
@@ -1375,9 +1441,65 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         }
     }
 
+    /**
+     * Revert snapshot for a volume
+     * @param snapshotInfo Information about volume snapshot
+     * @param snapshotOnPrimaryStore  Not used
+     * @throws CloudRuntimeException
+     */
     @Override
-    public void revertSnapshot(SnapshotInfo snapshot, SnapshotInfo snapshotOnPrimaryStore, AsyncCompletionCallback<CommandResult> callback) {
-        throw new UnsupportedOperationException("Reverting not supported. Create a template or volume based on the snapshot instead.");
+    public void revertSnapshot(SnapshotInfo snapshotInfo, SnapshotInfo snapshotOnPrimaryStore, AsyncCompletionCallback<CommandResult> callback) {
+
+        VolumeInfo volumeInfo = snapshotInfo.getBaseVolume();
+        VolumeVO volumeVO = _volumeDao.findById(volumeInfo.getId());
+
+        long storagePoolId = volumeVO.getPoolId();
+        long csSnapshotId = snapshotInfo.getId();
+        s_logger.info("Datera - restoreVolumeSnapshot from snapshotId " + String.valueOf(csSnapshotId) + " to volume" + volumeVO.getName());
+
+        DateraObject.AppInstance appInstance;
+
+        try{
+
+            if (volumeVO == null || volumeVO.getRemoved() != null) {
+                String errMsg = "The volume that the snapshot belongs to no longer exists.";
+
+                CommandResult commandResult = new CommandResult();
+
+                commandResult.setResult(errMsg);
+
+                callback.complete(commandResult);
+
+                return;
+            }
+
+            DateraObject.DateraConnection conn = DateraUtil.getDateraConnection(storagePoolId, _storagePoolDetailsDao);
+
+            SnapshotDetailsVO snapshotDetails = snapshotDetailsDao.findDetail(csSnapshotId, DateraUtil.SNAPSHOT_ID);
+
+            if (snapshotDetails != null && snapshotDetails.getValue() != null) {
+                // Native snapshot being used, restore snapshot from Datera AppInstance
+
+                String snapshotName = snapshotDetails.getValue();
+
+                s_logger.info("Datera - restoreVolumeSnapshot: " + snapshotName);
+
+                appInstance = DateraUtil.restoreVolumeSnapshot(conn, snapshotName);
+
+                Preconditions.checkNotNull(appInstance);
+
+                updateVolumeDetails(volumeInfo.getId(), appInstance.getSize());
+            }
+
+            CommandResult commandResult = new CommandResult();
+
+            callback.complete(commandResult);
+
+        } catch (Exception ex) {
+            s_logger.debug("Error in 'revertSnapshot()'. CloudStack snapshot ID: " + csSnapshotId, ex);
+            throw new CloudRuntimeException(ex.getMessage());
+        }
+
     }
 
     /**

@@ -63,7 +63,7 @@ public class DateraUtil {
     private static final String API_VERSION = "v2";
 
     public static final String PROVIDER_NAME = "Datera";
-    public static final String DRIVER_VERSION = "4.11.0-v2.0.2";
+    public static final String DRIVER_VERSION = "4.11.2-v2.0.2";
 
     private static final String HEADER_AUTH_TOKEN = "auth-token";
     private static final String HEADER_CONTENT_TYPE = "Content-type";
@@ -100,6 +100,8 @@ public class DateraUtil {
     public static final String INITIATOR_GROUP_PREFIX = "CS-InitiatorGroup";
     public static final String INITIATOR_PREFIX = "CS-Initiator";
     public static final String APPINSTANCE_PREFIX = "CS";
+    public static final int APPINSTANCE_MAX_LENTH = 64;
+
 
     public static final int MIN_NUM_REPLICAS = 1;
     public static final int MAX_NUM_REPLICAS = 5;
@@ -626,6 +628,40 @@ public class DateraUtil {
         } while ((!Objects.equals(volumeSnapshot.getOpState(), DateraUtil.STATE_AVAILABLE)) && --retries>0);
 
         return volumeSnapshot;
+    }
+
+    public static DateraObject.AppInstance restoreVolumeSnapshot(DateraObject.DateraConnection conn, String snapshotName) throws DateraObject.DateraError {
+
+        // split the snapshot name to appInstanceName and the snapshot timestamp
+        String[] tokens = snapshotName.split(":");
+        Preconditions.checkArgument(tokens.length == 2);
+
+        // A snapshot is stored in Cloudstack as <AppInstanceName>:<SnapshotTime>
+        String appInstanceName = tokens[0];
+        String snapshotTime = tokens[1];
+
+        HttpPut restoreSnapshotReq = new HttpPut(generateApiUrl("app_instances", appInstanceName,
+                "storage_instances", DateraObject.DEFAULT_STORAGE_NAME,
+                "volumes", DateraObject.DEFAULT_VOLUME_NAME
+                ));
+
+        try {
+            //bring appInstance  offline
+            updateAppInstanceAdminState(conn, appInstanceName, DateraObject.AppState.OFFLINE);
+
+            DateraObject.VolumeSnapshotRestore volumeSnapshotRestore = new DateraObject.VolumeSnapshotRestore(snapshotTime);
+
+            StringEntity jsonParams = new StringEntity(gson.toJson(volumeSnapshotRestore));
+            restoreSnapshotReq.setEntity(jsonParams);
+            executeApiRequest(conn, restoreSnapshotReq);
+            //bring appInstance online
+            updateAppInstanceAdminState(conn, appInstanceName, DateraObject.AppState.ONLINE);
+
+        } catch (UnsupportedEncodingException e) {
+            throw new CloudRuntimeException("Failed to restore volume snapshot" + e.getMessage());
+        }
+        return getAppInstance(conn, appInstanceName);
+
     }
 
     private static String executeApiRequest(DateraObject.DateraConnection conn, HttpRequest apiReq) throws DateraObject.DateraError {
