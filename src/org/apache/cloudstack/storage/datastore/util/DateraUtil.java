@@ -108,7 +108,7 @@ public class DateraUtil {
 
     public static final int POLL_TIMEOUT_MS = 3000;
     public static final String STATE_AVAILABLE = "available";
-    public static final int DEFAULT_RETRIES = 3;
+    public static final int DEFAULT_RETRIES = 10;
 
     private static Gson gson = new GsonBuilder().create();
 
