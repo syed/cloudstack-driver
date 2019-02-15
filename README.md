@@ -1,5 +1,3 @@
-# cloudstack-driver
-Repository for the Datera CloudStack driver
 ===================================
 DATERA CloudStack Driver Repository
 ===================================
@@ -19,6 +17,7 @@ DATERA CloudStack Driver Repository
      - 3.2
      - KVM
      - https://raw.githubusercontent.com/Datera/cloudstack-driver/master/cloud-plugin-storage-volume-datera-4.5.2.jar
+
   
 =====================
 Configuration Options
