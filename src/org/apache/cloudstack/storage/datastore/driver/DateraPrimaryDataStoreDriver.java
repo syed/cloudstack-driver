@@ -817,12 +817,17 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
      */
     private DateraObject.AppInstance createDateraVolume(DateraObject.DateraConnection conn, VolumeInfo volumeInfo, long storagePoolId) throws UnsupportedEncodingException, DateraObject.DateraError {
 
-        s_logger.debug("Datera - createDateraVolume() called");
+        s_logger.debug("createDateraVolume() called");
         DateraObject.AppInstance appInstance = null;
         try {
 
-            int minIops = Ints.checkedCast(volumeInfo.getMinIops());
-            int maxIops = Ints.checkedCast(volumeInfo.getMaxIops());
+            int minIops = Ints.checkedCast(volumeInfo.getMinIops() != null ? volumeInfo.getMinIops() : getDefaultMinIops(storagePoolId));
+
+            // int minIops = Ints.checkedCast(volumeInfo.getMinIops());
+
+            int maxIops = Ints.checkedCast(volumeInfo.getMaxIops() != null ? volumeInfo.getMaxIops() : getDefaultMaxIops(storagePoolId));
+
+            // int maxIops = Ints.checkedCast(volumeInfo.getMaxIops());
 
             if (maxIops <= 0) {  // We don't care about min iops for now
                 maxIops = Ints.checkedCast(getDefaultMaxIops(storagePoolId));
@@ -830,6 +835,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             int replicas = getNumReplicas(storagePoolId);
             String volumePlacement = getVolPlacement(storagePoolId);
+            s_logger.debug("getVolsize()");
 
             long volumeSizeBytes = getDataObjectSizeIncludingHypervisorSnapshotReserve(volumeInfo, _storagePoolDao.findById(storagePoolId));
             int volumeSizeGb = DateraUtil.bytesToGb(volumeSizeBytes);
@@ -839,7 +845,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 appInstance = DateraUtil.createAppInstance(conn, getAppInstanceName(volumeInfo), volumeSizeGb, maxIops, replicas, volumePlacement);
             }
         } catch (Exception ex) {
-            s_logger.debug("Datera - createDateraVolume() failed");
+            s_logger.debug("createDateraVolume() failed");
             s_logger.error(ex);
         }
         return appInstance;
