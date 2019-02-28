@@ -10,13 +10,11 @@ DATERA CloudStack Driver Repository
      - Capabilities Introduced
      - Supported Datera Product Versions
      - Supported Hypervisors
-     - Driver URL
    * - 4.11.2
      - v2.0.2
      - Dynamic Primary Storage
      - 3.2
      - KVM
-     - https://raw.githubusercontent.com/Datera/cloudstack-driver/master/cloud-plugin-storage-volume-datera-4.5.2.jar
 
   
 =====================
@@ -43,7 +41,7 @@ Configuration Options
 Configuration Steps
 ===================
 1. Deploy CloudStack by following the instructions http://docs.cloudstack.apache.org/projects/cloudstack-installation/en/4.11/
-2. Download Datera CloudStack driver from https://raw.githubusercontent.com/Datera/cloudstack-driver/master/cloud-plugin-storage-volume-datera-4.9.0-v2.0.jar
+2. Download Datera CloudStack driver from releases
 3. Save it to 
 
    ``/usr/share/cloudstack-management/lib/``
