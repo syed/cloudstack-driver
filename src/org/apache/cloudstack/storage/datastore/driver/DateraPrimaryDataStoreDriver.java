@@ -612,7 +612,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
         switch (dataObject.getType()) {
             case VOLUME:
-                s_logger.debug("Datera - Calc volume size");
+                // s_logger.debug("Datera - Calc volume size");
                 VolumeInfo volume = (VolumeInfo) dataObject;
                 volumeSize = volume.getSize();
                 Integer hypervisorSnapshotReserve = volume.getHypervisorSnapshotReserve();
@@ -636,7 +636,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 }
                 break;
         }
-        s_logger.debug("Datera - volume size:" + String.valueOf(volumeSize) );
+        s_logger.debug("Volume size:" + String.valueOf(volumeSize) );
         return volumeSize;
     }
 
@@ -721,12 +721,13 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         long csTemplateId = getCsIdForCloning(volumeInfo.getId(), "cloneOfTemplate");
         s_logger.debug("csTemplateId is "+ String.valueOf(csTemplateId));
 
+        /**
         VolumeVO volumeVo = _volumeDao.findById(volumeInfo.getId());
         long domainId = volumeVo.getDomainId();
         String volumeName = volumeVo.getName();
         // s_logger.debug("domainId : "+ String.valueOf(domainId));
         s_logger.debug("volumeName : "+ volumeName);
-
+        **/
 
         try {
 
@@ -781,9 +782,14 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             s_logger.warn(errMesg);
             throw new CloudRuntimeException(errMesg);
         }
+
         Preconditions.checkNotNull(appInstance);
         String iqn = appInstance.getIqn();
         String iqnPath = DateraUtil.generateIqnPath(iqn);
+
+        VolumeVO volumeVo = _volumeDao.findById(volumeInfo.getId());
+        s_logger.debug("volume ID : " + volumeInfo.getId());
+        s_logger.debug("volume uuid : " + volumeInfo.getUuid());
 
         volumeVo.set_iScsiName(iqnPath);
         volumeVo.setFolder(appInstance.getName());
