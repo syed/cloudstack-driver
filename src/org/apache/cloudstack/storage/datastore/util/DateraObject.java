@@ -30,33 +30,31 @@ public class DateraObject {
     public static final String DEFAULT_STORAGE_NAME = "storage-1";
     public static final String DEFAULT_VOLUME_NAME = "volume-1";
     public static final String DEFAULT_ACL = "deny_all";
+    public static final String DEFAULT_STORAGE_FORCE_BOOLEAN = "true";
 
     public enum AppState {
         ONLINE, OFFLINE;
 
         @Override
-        public String toString(){
+        public String toString() {
             return this.name().toLowerCase();
         }
     }
-
 
     public enum DateraOperation {
         ADD, REMOVE;
 
         @Override
-        public String toString(){
+        public String toString() {
             return this.name().toLowerCase();
         }
     }
 
     public enum DateraErrorTypes {
-        PermissionDeniedError, InvalidRouteError, AuthFailedError,
-        ValidationFailedError, InvalidRequestError, NotFoundError,
-        NotConnectedError, InvalidSessionKeyError, DatabaseError,
-        InternalError;
+        PermissionDeniedError, InvalidRouteError, AuthFailedError, ValidationFailedError, InvalidRequestError,
+        NotFoundError, NotConnectedError, InvalidSessionKeyError, DatabaseError, InternalError,ConflictError;
 
-        public boolean equals(DateraError err){
+        public boolean equals(DateraError err) {
             return this.name().equals(err.getName());
         }
     }
@@ -116,7 +114,6 @@ public class DateraObject {
         private String iqn;
         private List<String> ips;
 
-
         public Access(String iqn, List<String> ips) {
             this.iqn = iqn;
             this.ips = ips;
@@ -131,7 +128,6 @@ public class DateraObject {
 
         @SerializedName("total_iops_max")
         private Integer totalIops;
-
 
         public PerformancePolicy(int totalIops) {
             this.totalIops = totalIops;
@@ -191,11 +187,11 @@ public class DateraObject {
             return size;
         }
 
-        public String getPlacementMode(){
+        public String getPlacementMode() {
             return placementMode;
         }
 
-        public String getPath(){
+        public String getPath() {
             return path;
         }
 
@@ -209,6 +205,10 @@ public class DateraObject {
         private final String name = DEFAULT_STORAGE_NAME;
         private Map<String, Volume> volumes;
         private Access access;
+        private String force;
+
+        @SerializedName("ip_pool")
+        private String ipPool;
 
         public StorageInstance(int size, int totalIops, int replicaCount) {
             Volume volume = new Volume(size, totalIops, replicaCount);
@@ -216,13 +216,22 @@ public class DateraObject {
             volumes.put(DEFAULT_VOLUME_NAME, volume);
         }
 
-        public StorageInstance(int size, int totalIops, int replicaCount, String placementMode) {
+        public StorageInstance(int size, int totalIops, int replicaCount, String placementMode, String ipPool) {
             Volume volume = new Volume(size, totalIops, replicaCount, placementMode);
             volumes = new HashMap<String, Volume>();
             volumes.put(DEFAULT_VOLUME_NAME, volume);
+            this.ipPool = new StringBuilder("/access_network_ip_pools/").append(ipPool).toString();
         }
 
-        public Access getAccess(){
+        public StorageInstance(int size, int totalIops, int replicaCount, String placementMode, String ipPool, String force) {
+            Volume volume = new Volume(size, totalIops, replicaCount, placementMode);
+            volumes = new HashMap<String, Volume>();
+            volumes.put(DEFAULT_VOLUME_NAME, volume);
+            this.ipPool = new StringBuilder("/access_network_ip_pools/").append(ipPool).toString();
+            this.force = DEFAULT_STORAGE_FORCE_BOOLEAN;
+        }
+
+        public Access getAccess() {
             return access;
         }
 
@@ -232,6 +241,10 @@ public class DateraObject {
 
         public int getSize() {
             return getVolume().getSize();
+        }
+
+        public String getForce() {
+            return this.force;
         }
 
     }
@@ -265,9 +278,10 @@ public class DateraObject {
             this.createMode = DEFAULT_CREATE_MODE;
         }
 
-        public AppInstance(String name, int size, int totalIops, int replicaCount, String placementMode) {
+        public AppInstance(String name, int size, int totalIops, int replicaCount, String placementMode,
+                String ipPool) {
             this.name = name;
-            StorageInstance storageInstance = new StorageInstance(size, totalIops, replicaCount, placementMode);
+            StorageInstance storageInstance = new StorageInstance(size, totalIops, replicaCount, placementMode, ipPool);
             this.storageInstances = new HashMap<String, StorageInstance>();
             this.storageInstances.put(DEFAULT_STORAGE_NAME, storageInstance);
             this.accessControlMode = DEFAULT_ACL;
@@ -290,7 +304,7 @@ public class DateraObject {
         }
 
         public int getTotalIops() {
-            StorageInstance storageInstance = storageInstances.get(DEFAULT_STORAGE_NAME) ;
+            StorageInstance storageInstance = storageInstances.get(DEFAULT_STORAGE_NAME);
             return storageInstance.getVolume().getPerformancePolicy().getTotalIops();
         }
 
@@ -303,14 +317,23 @@ public class DateraObject {
             return storageInstance.getSize();
         }
 
-        public String getVolumePath(){
+        public String getVolumePath() {
             StorageInstance storageInstance = storageInstances.get(DEFAULT_STORAGE_NAME);
             return storageInstance.getVolume().getPath();
         }
 
-        public String getVolumeOpState(){
+        public String getVolumeOpState() {
             StorageInstance storageInstance = storageInstances.get(DEFAULT_STORAGE_NAME);
             return storageInstance.getVolume().getOpState();
+        }
+    }
+
+    public static class AccessNetworkIpPool {
+        @SerializedName("ip_pool")
+        private String ipPool;
+
+        public AccessNetworkIpPool(String ipPool) {
+            this.ipPool = new StringBuilder("/access_network_ip_pools/").append(ipPool).toString();
         }
     }
 
@@ -326,7 +349,7 @@ public class DateraObject {
             this.name = name;
         }
 
-        public Initiator(String path, DateraOperation op){
+        public Initiator(String path, DateraOperation op) {
             this.path = path;
             this.op = op.toString();
         }
@@ -366,7 +389,6 @@ public class DateraObject {
         }
     }
 
-
     public static class VolumeSnapshot {
 
         private String uuid;
@@ -375,7 +397,6 @@ public class DateraObject {
 
         @SerializedName("op_state")
         private String opState;
-
 
         VolumeSnapshot(String uuid) {
             this.uuid = uuid;
@@ -389,18 +410,19 @@ public class DateraObject {
             return opState;
         }
 
-        public String getPath(){
+        public String getPath() {
             return path;
         }
     }
 
-
-    public static class VolumeSnapshotRestore{
+    public static class VolumeSnapshotRestore {
 
         @SerializedName("restore_point")
         private String restorePoint;
 
-        VolumeSnapshotRestore(String restorePoint) { this.restorePoint=restorePoint;}
+        VolumeSnapshotRestore(String restorePoint) {
+            this.restorePoint = restorePoint;
+        }
     }
 
     public static class DateraError extends Exception {
@@ -427,7 +449,7 @@ public class DateraObject {
 
         public String getMessage() {
 
-            String errMesg = name  + "\n";
+            String errMesg = name + "\n";
             if (message != null) {
                 errMesg += message + "\n";
             }
@@ -440,7 +462,7 @@ public class DateraObject {
             return errMesg;
         }
 
-        public String getName(){
+        public String getName() {
             return name;
         }
     }

@@ -36,13 +36,16 @@ Configuration Options
      - (String) Datera API user password.
    * - ``numReplicas`` = ``2``
      - (Int) Number of replicas to create a volume.
+   * - ``ipPool`` = ``default``
+     - (String) Access network IP pool name.
+
 
 ===================
 Configuration Steps
 ===================
 1. Deploy CloudStack by following the instructions http://docs.cloudstack.apache.org/projects/cloudstack-installation/en/4.11/
 2. Download Datera CloudStack driver from releases
-3. Save it to 
+3. Save it to:
 
    ``/usr/share/cloudstack-management/lib/``
 4. Restart CloudStack management service

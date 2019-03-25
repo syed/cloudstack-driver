@@ -61,34 +61,47 @@ import java.util.Map;
 public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycle {
     private static final Logger s_logger = Logger.getLogger(DateraPrimaryDataStoreLifeCycle.class);
 
-    @Inject private CapacityManager _capacityMgr;
-    @Inject private DataCenterDao zoneDao;
-    @Inject private ClusterDao _clusterDao;
-    @Inject private ClusterDetailsDao _clusterDetailsDao;
-    @Inject private PrimaryDataStoreDao storagePoolDao;
-    @Inject private HostDao _hostDao;
-    @Inject private PrimaryDataStoreHelper dataStoreHelper;
-    @Inject private ResourceManager _resourceMgr;
-    @Inject private SnapshotDao _snapshotDao;
-    @Inject private SnapshotDetailsDao _snapshotDetailsDao;
-    @Inject private StorageManager _storageMgr;
-    @Inject private StoragePoolHostDao _storagePoolHostDao;
-    @Inject private StoragePoolAutomation storagePoolAutomation;
+    @Inject
+    private CapacityManager _capacityMgr;
+    @Inject
+    private DataCenterDao zoneDao;
+    @Inject
+    private ClusterDao _clusterDao;
+    @Inject
+    private ClusterDetailsDao _clusterDetailsDao;
+    @Inject
+    private PrimaryDataStoreDao storagePoolDao;
+    @Inject
+    private HostDao _hostDao;
+    @Inject
+    private PrimaryDataStoreHelper dataStoreHelper;
+    @Inject
+    private ResourceManager _resourceMgr;
+    @Inject
+    private SnapshotDao _snapshotDao;
+    @Inject
+    private SnapshotDetailsDao _snapshotDetailsDao;
+    @Inject
+    private StorageManager _storageMgr;
+    @Inject
+    private StoragePoolHostDao _storagePoolHostDao;
+    @Inject
+    private StoragePoolAutomation storagePoolAutomation;
 
     @Override
     public DataStore initialize(Map<String, Object> dsInfos) {
 
-        String url = (String)dsInfos.get("url");
-        Long zoneId = (Long)dsInfos.get("zoneId");
-        Long podId = (Long)dsInfos.get("podId");
-        Long clusterId = (Long)dsInfos.get("clusterId");
-        String storagePoolName = (String)dsInfos.get("name");
-        String providerName = (String)dsInfos.get("providerName");
-        Long capacityBytes = (Long)dsInfos.get("capacityBytes");
-        Long capacityIops = (Long)dsInfos.get("capacityIops");
-        String tags = (String)dsInfos.get("tags");
+        String url = (String) dsInfos.get("url");
+        Long zoneId = (Long) dsInfos.get("zoneId");
+        Long podId = (Long) dsInfos.get("podId");
+        Long clusterId = (Long) dsInfos.get("clusterId");
+        String storagePoolName = (String) dsInfos.get("name");
+        String providerName = (String) dsInfos.get("providerName");
+        Long capacityBytes = (Long) dsInfos.get("capacityBytes");
+        Long capacityIops = (Long) dsInfos.get("capacityIops");
+        String tags = (String) dsInfos.get("tags");
         @SuppressWarnings("unchecked")
-        Map<String, String> details = (Map<String, String>)dsInfos.get("details");
+        Map<String, String> details = (Map<String, String>) dsInfos.get("details");
         String domainName = details.get("domainname");
 
         String storageVip = DateraUtil.getStorageVip(url);
@@ -103,7 +116,8 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 
         PrimaryDataStoreParameters parameters = new PrimaryDataStoreParameters();
 
-        // checks if primary datastore is clusterwide. If so, uses the clusterId to set the uuid and then sets the podId and clusterId parameters
+        // checks if primary datastore is clusterwide. If so, uses the clusterId to set
+        // the uuid and then sets the podId and clusterId parameters
         if (clusterId != null) {
             if (podId == null) {
                 throw new CloudRuntimeException("The Pod ID must be specified.");
@@ -114,7 +128,8 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
             ClusterVO cluster = _clusterDao.findById(clusterId);
             String clusterUuid = cluster.getUuid();
             randomString = DateraUtil.generateUUID(clusterUuid);
-            //uuid = DateraUtil.PROVIDER_NAME + "_" + cluster.getUuid() + "_" + storageVip + "_" + clusterAdminUsername + "_" + numReplicas + "_" + volPlacement;
+            // uuid = DateraUtil.PROVIDER_NAME + "_" + cluster.getUuid() + "_" + storageVip
+            // + "_" + clusterAdminUsername + "_" + numReplicas + "_" + volPlacement;
             uuid = DateraUtil.PROVIDER_NAME + "_" + clusterUuid + "_" + randomString;
             s_logger.debug("Datera - Setting Datera cluster-wide primary storage uuid to " + uuid);
             parameters.setPodId(podId);
@@ -132,7 +147,8 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
             DataCenterVO zone = zoneDao.findById(zoneId);
             String zoneUuid = zone.getUuid();
             randomString = DateraUtil.generateUUID(zoneUuid);
-            //uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storageVip + "_" + clusterAdminUsername + "_" + numReplicas + "_" + volPlacement;
+            // uuid = DateraUtil.PROVIDER_NAME + "_" + zone.getUuid() + "_" + storageVip +
+            // "_" + clusterAdminUsername + "_" + numReplicas + "_" + volPlacement;
             uuid = DateraUtil.PROVIDER_NAME + "_" + zoneUuid + "_" + randomString;
 
             s_logger.debug("Datera - Setting Datera zone-wide primary storage uuid to " + uuid);
@@ -185,9 +201,8 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
                 lClusterDefaultMinIops = Long.parseLong(clusterDefaultMinIops);
             }
         } catch (NumberFormatException ex) {
-            s_logger.warn("Cannot parse the setting of " + DateraUtil.CLUSTER_DEFAULT_MIN_IOPS +
-                          ", using default value: " + lClusterDefaultMinIops +
-                          ". Exception: " + ex);
+            s_logger.warn("Cannot parse the setting of " + DateraUtil.CLUSTER_DEFAULT_MIN_IOPS
+                    + ", using default value: " + lClusterDefaultMinIops + ". Exception: " + ex);
         }
 
         try {
@@ -197,20 +212,18 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
                 lClusterDefaultMaxIops = Long.parseLong(clusterDefaultMaxIops);
             }
         } catch (NumberFormatException ex) {
-            s_logger.warn("Cannot parse the setting of " + DateraUtil.CLUSTER_DEFAULT_MAX_IOPS +
-                          ", using default value: " + lClusterDefaultMaxIops +
-                          ". Exception: " + ex);
+            s_logger.warn("Cannot parse the setting of " + DateraUtil.CLUSTER_DEFAULT_MAX_IOPS
+                    + ", using default value: " + lClusterDefaultMaxIops + ". Exception: " + ex);
         }
 
-
         if (lClusterDefaultMinIops > lClusterDefaultMaxIops) {
-            throw new CloudRuntimeException("The parameter '" + DateraUtil.CLUSTER_DEFAULT_MIN_IOPS + "' must be less than or equal to the parameter '" +
-                DateraUtil.CLUSTER_DEFAULT_MAX_IOPS + "'.");
+            throw new CloudRuntimeException("The parameter '" + DateraUtil.CLUSTER_DEFAULT_MIN_IOPS
+                    + "' must be less than or equal to the parameter '" + DateraUtil.CLUSTER_DEFAULT_MAX_IOPS + "'.");
         }
 
         if (numReplicas < DateraUtil.MIN_NUM_REPLICAS || numReplicas > DateraUtil.MAX_NUM_REPLICAS) {
-             throw new CloudRuntimeException("The parameter '" + DateraUtil.NUM_REPLICAS + "' must be between  " +
-                DateraUtil.CLUSTER_DEFAULT_MAX_IOPS + "' and " + DateraUtil.MAX_NUM_REPLICAS);
+            throw new CloudRuntimeException("The parameter '" + DateraUtil.NUM_REPLICAS + "' must be between  "
+                    + DateraUtil.CLUSTER_DEFAULT_MAX_IOPS + "' and " + DateraUtil.MAX_NUM_REPLICAS);
         }
 
         details.put(DateraUtil.CLUSTER_DEFAULT_MIN_IOPS, String.valueOf(lClusterDefaultMinIops));
@@ -218,6 +231,7 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 
         details.put(DateraUtil.NUM_REPLICAS, String.valueOf(DateraUtil.getNumReplicas(url)));
         details.put(DateraUtil.VOL_PLACEMENT, String.valueOf(DateraUtil.getVolPlacement(url)));
+        details.put(DateraUtil.IP_POOL, String.valueOf(DateraUtil.getIpPool(url)));
 
         return dataStoreHelper.createPrimaryDataStore(parameters);
     }
@@ -229,16 +243,18 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 
     @Override
     public boolean attachCluster(DataStore datastore, ClusterScope scope) {
-        PrimaryDataStoreInfo primaryDataStoreInfo = (PrimaryDataStoreInfo)datastore;
+        PrimaryDataStoreInfo primaryDataStoreInfo = (PrimaryDataStoreInfo) datastore;
 
         // check if there is at least one host up in this cluster
-        List<HostVO> allHosts = _resourceMgr.listAllUpAndEnabledHosts(Host.Type.Routing, primaryDataStoreInfo.getClusterId(),
-                primaryDataStoreInfo.getPodId(), primaryDataStoreInfo.getDataCenterId());
+        List<HostVO> allHosts = _resourceMgr.listAllUpAndEnabledHosts(Host.Type.Routing,
+                primaryDataStoreInfo.getClusterId(), primaryDataStoreInfo.getPodId(),
+                primaryDataStoreInfo.getDataCenterId());
 
         if (allHosts.isEmpty()) {
             storagePoolDao.expunge(primaryDataStoreInfo.getId());
 
-            throw new CloudRuntimeException("No host up to associate a storage pool with in cluster " + primaryDataStoreInfo.getClusterId());
+            throw new CloudRuntimeException(
+                    "No host up to associate a storage pool with in cluster " + primaryDataStoreInfo.getClusterId());
         }
 
         List<HostVO> poolHosts = new ArrayList<HostVO>();
@@ -254,7 +270,8 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         }
 
         if (poolHosts.isEmpty()) {
-            s_logger.warn("No host can access storage pool '" + primaryDataStoreInfo + "' on cluster '" + primaryDataStoreInfo.getClusterId() + "'.");
+            s_logger.warn("No host can access storage pool '" + primaryDataStoreInfo + "' on cluster '"
+                    + primaryDataStoreInfo.getClusterId() + "'.");
 
             storagePoolDao.expunge(primaryDataStoreInfo.getId());
 
@@ -264,16 +281,20 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
         dataStoreHelper.attachCluster(datastore);
 
         return true;
-        //throw new UnsupportedOperationException("Only Zone-wide scope is supported with the Datera Storage driver");
+        // throw new UnsupportedOperationException("Only Zone-wide scope is supported
+        // with the Datera Storage driver");
     }
 
     @Override
     public boolean attachZone(DataStore dataStore, ZoneScope scope, HypervisorType hypervisorType) {
         dataStoreHelper.attachZone(dataStore);
 
-        List<HostVO> xenServerHosts = _resourceMgr.listAllUpAndEnabledHostsInOneZoneByHypervisor(HypervisorType.XenServer, scope.getScopeId());
-        List<HostVO> vmWareServerHosts = _resourceMgr.listAllUpAndEnabledHostsInOneZoneByHypervisor(HypervisorType.VMware, scope.getScopeId());
-        List<HostVO> kvmHosts = _resourceMgr.listAllUpAndEnabledHostsInOneZoneByHypervisor(HypervisorType.KVM, scope.getScopeId());
+        List<HostVO> xenServerHosts = _resourceMgr
+                .listAllUpAndEnabledHostsInOneZoneByHypervisor(HypervisorType.XenServer, scope.getScopeId());
+        List<HostVO> vmWareServerHosts = _resourceMgr
+                .listAllUpAndEnabledHostsInOneZoneByHypervisor(HypervisorType.VMware, scope.getScopeId());
+        List<HostVO> kvmHosts = _resourceMgr.listAllUpAndEnabledHostsInOneZoneByHypervisor(HypervisorType.KVM,
+                scope.getScopeId());
         List<HostVO> hosts = new ArrayList<HostVO>();
 
         hosts.addAll(xenServerHosts);
@@ -313,11 +334,14 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
 
         if (lstSnapshots != null) {
             for (SnapshotVO snapshot : lstSnapshots) {
-                SnapshotDetailsVO snapshotDetails = _snapshotDetailsDao.findDetail(snapshot.getId(), DateraUtil.STORAGE_POOL_ID);
+                SnapshotDetailsVO snapshotDetails = _snapshotDetailsDao.findDetail(snapshot.getId(),
+                        DateraUtil.STORAGE_POOL_ID);
 
                 // if this snapshot belongs to the storagePool that was passed in
-                if (snapshotDetails != null && snapshotDetails.getValue() != null && Long.parseLong(snapshotDetails.getValue()) == store.getId()) {
-                    throw new CloudRuntimeException("This primary storage cannot be deleted because it currently contains one or more snapshots.");
+                if (snapshotDetails != null && snapshotDetails.getValue() != null
+                        && Long.parseLong(snapshotDetails.getValue()) == store.getId()) {
+                    throw new CloudRuntimeException(
+                            "This primary storage cannot be deleted because it currently contains one or more snapshots.");
                 }
             }
         }
@@ -341,7 +365,8 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
             long usedBytes = _capacityMgr.getUsedBytes(storagePoolVo);
 
             if (capacityBytes < usedBytes) {
-                throw new CloudRuntimeException("Cannot reduce the number of bytes for this storage pool as it would lead to an insufficient number of bytes");
+                throw new CloudRuntimeException(
+                        "Cannot reduce the number of bytes for this storage pool as it would lead to an insufficient number of bytes");
             }
         }
 
@@ -352,7 +377,8 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
             long usedIops = _capacityMgr.getUsedIops(storagePoolVo);
 
             if (capacityIops < usedIops) {
-                throw new CloudRuntimeException("Cannot reduce the number of IOPS for this storage pool as it would lead to an insufficient number of IOPS");
+                throw new CloudRuntimeException(
+                        "Cannot reduce the number of IOPS for this storage pool as it would lead to an insufficient number of IOPS");
             }
         }
     }
@@ -378,7 +404,8 @@ public class DateraPrimaryDataStoreLifeCycle implements PrimaryDataStoreLifeCycl
     }
 
     private static boolean isSupportedHypervisorType(HypervisorType hypervisorType) {
-        return HypervisorType.XenServer.equals(hypervisorType) || HypervisorType.VMware.equals(hypervisorType) || HypervisorType.KVM.equals(hypervisorType);
+        return HypervisorType.XenServer.equals(hypervisorType) || HypervisorType.VMware.equals(hypervisorType)
+                || HypervisorType.KVM.equals(hypervisorType);
     }
 
     private HypervisorType getHypervisorType(long hostId) {
