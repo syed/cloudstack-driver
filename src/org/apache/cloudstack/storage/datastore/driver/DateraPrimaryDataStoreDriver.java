@@ -529,13 +529,13 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
      * @return IP pool name
      */
     private String getIpPool(long storagePoolId) {
+        String ipPool = DateraUtil.DEFAULT_IP_POOL;
         StoragePoolDetailVO storagePoolDetail = _storagePoolDetailsDao.findDetail(storagePoolId, DateraUtil.IP_POOL);
-        String IpPool = storagePoolDetail.getValue();
-
-        if (IpPool == null) {
-            IpPool = DateraUtil.DEFAULT_IP_POOL;
+        if (storagePoolDetail != null) {
+            ipPool = storagePoolDetail.getValue();
         }
-        return IpPool;
+        s_logger.debug("ipPool: " + ipPool);
+        return ipPool;
 
     }
 

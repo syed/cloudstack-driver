@@ -61,7 +61,7 @@ public class DateraUtil {
     private static final String API_VERSION = "v2";
 
     public static final String PROVIDER_NAME = "Datera";
-    public static final String DRIVER_VERSION = "4.11.2-v2.0.2";
+    public static final String DRIVER_VERSION = "4.11.2-v2.0.3";
 
     private static final String HEADER_AUTH_TOKEN = "auth-token";
     private static final String HEADER_CONTENT_TYPE = "Content-type";
@@ -296,7 +296,7 @@ public class DateraUtil {
 
     public static DateraObject.AppInstance cloneAppInstanceFromVolume(DateraObject.DateraConnection conn, String name,
             String srcCloneName, String ipPool) throws UnsupportedEncodingException, DateraObject.DateraError {
-
+        s_logger.debug("cloneAppInstanceFromVolume() called");
         DateraObject.AppInstance srcAppInstance = getAppInstance(conn, srcCloneName);
 
         if (srcAppInstance == null) {
