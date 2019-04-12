@@ -566,8 +566,8 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 VolumeDetailVO volumeDetail = volumeDetailsDao.findDetail(volume.getId(), DateraUtil.VOLUME_SIZE);
 
                 if (volumeDetail != null && volumeDetail.getValue() != null) {
-                    long volumeSizeGb = Long.parseLong(volumeDetail.getValue());
-                    long volumeSizeBytes = DateraUtil.gbToBytes((int) (volumeSizeGb));
+                    long volumeSizeGib = Long.parseLong(volumeDetail.getValue());
+                    long volumeSizeBytes = DateraUtil.gibToBytes((int) (volumeSizeGib));
                     usedSpaceBytes += volumeSizeBytes;
                 } else {
                     DateraObject.DateraConnection conn = DateraUtil.getDateraConnection(storagePool.getId(),
@@ -577,7 +577,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                         String appInstanceName = getAppInstanceName(volumeDataFactory.getVolume(volume.getId()));
                         DateraObject.AppInstance appInstance = DateraUtil.getAppInstance(conn, appInstanceName);
                         if (appInstance != null) {
-                            usedSpaceBytes += DateraUtil.gbToBytes(appInstance.getSize());
+                            usedSpaceBytes += DateraUtil.gibToBytes(appInstance.getSize());
                         }
                     } catch (DateraObject.DateraError dateraError) {
                         String errMesg = "Error getting used bytes for storage pool : " + storagePool.getId();
@@ -648,7 +648,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
         switch (dataObject.getType()) {
         case VOLUME:
-            // s_logger.debug("Datera - Calc volume size");
+
             VolumeInfo volume = (VolumeInfo) dataObject;
             volumeSize = volume.getSize();
             Integer hypervisorSnapshotReserve = volume.getHypervisorSnapshotReserve();
@@ -657,6 +657,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 hypervisorSnapshotReserve = Math.max(hypervisorSnapshotReserve, s_lowestHypervisorSnapshotReserve);
                 volumeSize += volumeSize * (hypervisorSnapshotReserve / 100f);
             }
+            s_logger.debug("Volume size:" + String.valueOf(volumeSize));
             break;
 
         case TEMPLATE:
@@ -669,9 +670,10 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             } else {
                 volumeSize = (long) (templateSize + templateSize * (s_lowestHypervisorSnapshotReserve / 100f));
             }
+            s_logger.debug("Template volume size:" + String.valueOf(volumeSize));
+
             break;
         }
-        s_logger.debug("Volume size:" + String.valueOf(volumeSize));
         return volumeSize;
     }
 
@@ -776,10 +778,10 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                         storagePoolDao.findById(storagePoolId));
 
                 // expand the template
-                if (volumeSize > DateraUtil.gbToBytes(appInstance.getSize())) {
+                if (volumeSize > DateraUtil.gibToBytes(appInstance.getSize())) {
 
                     // Expand the volume to include HSR depending on the volume's service offering
-                    DateraUtil.updateAppInstanceSize(conn, appInstanceName, DateraUtil.bytesToGb(volumeSize));
+                    DateraUtil.updateAppInstanceSize(conn, appInstanceName, DateraUtil.bytesToGib(volumeSize));
 
                     // refresh appInstance
                     appInstance = DateraUtil.getAppInstance(conn, appInstanceName);
@@ -877,12 +879,12 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             long volumeSizeBytes = getDataObjectSizeIncludingHypervisorSnapshotReserve(volumeInfo,
                     _storagePoolDao.findById(storagePoolId));
-            int volumeSizeGb = DateraUtil.bytesToGb(volumeSizeBytes);
+            int volumeSizeGib = DateraUtil.bytesToGib(volumeSizeBytes);
             if (volumePlacement == null) {
-                appInstance = DateraUtil.createAppInstance(conn, getAppInstanceName(volumeInfo), volumeSizeGb, maxIops,
+                appInstance = DateraUtil.createAppInstance(conn, getAppInstanceName(volumeInfo), volumeSizeGib, maxIops,
                         replicas);
             } else {
-                appInstance = DateraUtil.createAppInstance(conn, getAppInstanceName(volumeInfo), volumeSizeGb, maxIops,
+                appInstance = DateraUtil.createAppInstance(conn, getAppInstanceName(volumeInfo), volumeSizeGib, maxIops,
                         replicas, volumePlacement, ipPool);
             }
         } catch (Exception ex) {
@@ -1004,7 +1006,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
      * @param storagePoolId primary store ID
      */
     private void createTempVolume(SnapshotInfo snapshotInfo, long storagePoolId) {
-        s_logger.debug("createTemplateVolume() from snapshot called");
+        s_logger.debug("createTempVolume() from snapshot called");
         String ipPool = getIpPool(storagePoolId);
         long csSnapshotId = snapshotInfo.getId();
 
@@ -1089,15 +1091,18 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             long templateSizeBytes = getDataObjectSizeIncludingHypervisorSnapshotReserve(templateInfo,
                     storagePoolDao.findById(storagePoolId));
 
-            int templateSizeGb = DateraUtil.bytesToGb(templateSizeBytes);
+            s_logger.debug("cached VM template sizeBytes: " + String.valueOf(templateSizeBytes));
+
+            int templateSizeGib = DateraUtil.bytesToGib(templateSizeBytes);
+
             int templateIops = DateraUtil.MAX_IOPS;
             int replicaCount = getNumReplicas(storagePoolId);
             appInstanceName = getAppInstanceName(templateInfo);
             String volumePlacement = getVolPlacement(storagePoolId);
             String ipPool = getIpPool(storagePoolId);
 
-            s_logger.debug("cached VM template app_instance: " + appInstanceName + " ipPool: " + ipPool);
-            DateraObject.AppInstance appInstance = DateraUtil.createAppInstance(conn, appInstanceName, templateSizeGb,
+            s_logger.debug("cached VM template app_instance: " + appInstanceName + " ipPool: " + ipPool + " sizeGib: " + String.valueOf(templateSizeGib));
+            DateraObject.AppInstance appInstance = DateraUtil.createAppInstance(conn, appInstanceName, templateSizeGib,
                     templateIops, replicaCount, volumePlacement, ipPool);
 
             if (appInstance == null) {
@@ -1111,7 +1116,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             templatePoolRef.setInstallPath(DateraUtil.generateIqnPath(iqn));
             templatePoolRef.setLocalDownloadPath(appInstance.getName());
-            templatePoolRef.setTemplateSize(DateraUtil.gbToBytes(appInstance.getSize()));
+            templatePoolRef.setTemplateSize(DateraUtil.gibToBytes(appInstance.getSize()));
 
             tmpltPoolDao.update(templatePoolRef.getId(), templatePoolRef);
 
@@ -1305,8 +1310,8 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
                 long capacityBytes = storagePool.getCapacityBytes();
                 long usedBytes = getUsedBytes(storagePool);
-                int volumeSizeGb = baseAppInstance.getSize();
-                long volumeSizeBytes = DateraUtil.gbToBytes(volumeSizeGb);
+                int volumeSizeGib = baseAppInstance.getSize();
+                long volumeSizeBytes = DateraUtil.gibToBytes(volumeSizeGib);
                 String volumePlacement = getVolPlacement(storagePoolId);
                 String ipPool = getIpPool(storagePoolId);
 
@@ -1319,7 +1324,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
                 String appInstanceName = getAppInstanceName(snapshotInfo);
                 DateraObject.AppInstance snapshotAppInstance = DateraUtil.createAppInstance(conn, appInstanceName,
-                        volumeSizeGb, DateraUtil.MAX_IOPS, getNumReplicas(storagePoolId), volumePlacement, ipPool);
+                        volumeSizeGib, DateraUtil.MAX_IOPS, getNumReplicas(storagePoolId), volumePlacement, ipPool);
 
                 snapshotObjectTo.setPath(snapshotAppInstance.getName());
                 String iqnPath = DateraUtil.generateIqnPath(snapshotAppInstance.getIqn());
@@ -1618,7 +1623,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
                 newSizeBytes = getVolumeSizeIncludingHypervisorSnapshotReserve(payload.newSize, hsr);
             }
 
-            int newSize = DateraUtil.bytesToGb(newSizeBytes);
+            int newSize = DateraUtil.bytesToGib(newSizeBytes);
 
             DateraObject.DateraConnection conn = DateraUtil.getDateraConnection(storagePoolId, _storagePoolDetailsDao);
 

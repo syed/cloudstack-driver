@@ -961,11 +961,11 @@ public class DateraUtil {
         return false;
     }
 
-    public static int bytesToGb(long volumeSizeBytes) {
-        return (int) Math.ceil(volumeSizeBytes / ONEGIB_BYTES);
+    public static int bytesToGib(long volumeSizeBytes) {
+        return (int) Math.ceil(volumeSizeBytes / (double) ONEGIB_BYTES);
     }
 
-    public static long gbToBytes(int volumeSizeGb) {
+    public static long gibToBytes(int volumeSizeGb) {
         return volumeSizeGb * ONEGIB_BYTES;
     }
 
