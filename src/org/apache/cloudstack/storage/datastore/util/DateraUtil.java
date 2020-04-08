@@ -60,10 +60,10 @@ import java.util.UUID;
 public class DateraUtil {
 
     private static final Logger s_logger = Logger.getLogger(DateraUtil.class);
-    private static final String API_VERSION = "v2.1";
+    private static final String API_VERSION = "v2.2";
 
     public static final String PROVIDER_NAME = "Datera";
-    public static final String DRIVER_VERSION = "4.11.2-v2.0.3";
+    public static final String DRIVER_VERSION = "4.11.3-v2.2.0";
 
     private static final String HEADER_AUTH_TOKEN = "auth-token";
     private static final String HEADER_CONTENT_TYPE = "Content-type";
