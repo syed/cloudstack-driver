@@ -92,7 +92,7 @@ class TestData():
                 TestData.password: "password",
                 TestData.port: 80,
                 TestData.url: "https://172.30.8.20:443",
-                TestData.tenant: "/root/tenant4"
+                TestData.tenant: "/root/tenant4",
                 TestData.version: "v2.2"
             },
             TestData.xenServer: {

@@ -99,7 +99,7 @@ class TestData():
                 TestData.password: "password",
                 TestData.port: 80,
                 TestData.url: "https://172.30.8.20:443",
-                TestData.tenant: "/root/tenant4"
+                TestData.tenant: "/root/tenant4",
                 TestData.version: "v2.2"
             },
             TestData.xenServer: {
@@ -477,7 +477,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
         virtual_machine.stop(self.apiClient)
 
@@ -556,7 +556,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
         self._check_and_get_cs_volume(self.volume.id, self.testdata[TestData.volume_1][TestData.diskName])
 
@@ -696,7 +696,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
         self._check_and_get_cs_volume(self.volume.id, self.testdata[TestData.volume_1][TestData.diskName])
 
@@ -788,7 +788,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
 
 
@@ -907,7 +907,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
 
         self._check_and_get_cs_volume(self.volume.id, self.testdata[TestData.volume_1][TestData.diskName])
@@ -1032,7 +1032,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
         virtual_machine.stop(self.apiClient)
 
@@ -1231,7 +1231,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
         #######################################
         #######################################
@@ -1359,7 +1359,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
 
 
@@ -1455,7 +1455,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
 
         initiator_group_name = self._get_initiator_group_name()
@@ -1609,7 +1609,7 @@ class TestVolumes(cloudstackTestCase):
             startvm=True,
             mode='advanced'
         )
-	self.cleanup.append(virtual_machine)
+        self.cleanup.append(virtual_machine)
 
         initiator_group_name = self._get_initiator_group_name()
 
