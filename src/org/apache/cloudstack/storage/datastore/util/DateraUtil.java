@@ -24,6 +24,8 @@ import com.cloud.utils.exception.CloudRuntimeException;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailVO;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
@@ -58,10 +60,10 @@ import java.util.UUID;
 public class DateraUtil {
 
     private static final Logger s_logger = Logger.getLogger(DateraUtil.class);
-    private static final String API_VERSION = "v2";
+    private static final String API_VERSION = "v2.2";
 
     public static final String PROVIDER_NAME = "Datera";
-    public static final String DRIVER_VERSION = "4.11.2-v2.0.3";
+    public static final String DRIVER_VERSION = "4.11.3-v2.2.0";
 
     private static final String HEADER_AUTH_TOKEN = "auth-token";
     private static final String HEADER_CONTENT_TYPE = "Content-type";
@@ -268,21 +270,23 @@ public class DateraUtil {
         return pollAppInstanceAvailable(conn, name);
     }
 
-    public static DateraObject.AppInstance createAppInstance(DateraObject.DateraConnection conn, String name, int size,
-            int totalIops, int replicaCount) throws UnsupportedEncodingException, DateraObject.DateraError {
+    public static DateraObject.AppInstance createAppInstance(DateraObject.DateraConnection conn, String name, String desc,
+                                                             int size, int totalIops, int replicaCount)
+            throws UnsupportedEncodingException, DateraObject.DateraError {
 
-        DateraObject.AppInstance appInstance = new DateraObject.AppInstance(name, size, totalIops, replicaCount,
+        DateraObject.AppInstance appInstance = new DateraObject.AppInstance(name, desc, size, totalIops, replicaCount,
                 DEFAULT_VOL_PLACEMENT, DEFAULT_IP_POOL);
         StringEntity appInstanceEntity = new StringEntity(gson.toJson(appInstance));
 
         return createAppInstance(conn, name, appInstanceEntity);
     }
 
-    public static DateraObject.AppInstance createAppInstance(DateraObject.DateraConnection conn, String name, int size,
-            int totalIops, int replicaCount, String placementMode, String ipPool)
+    public static DateraObject.AppInstance createAppInstance(DateraObject.DateraConnection conn, String name, String desc,
+                                                             int size, int totalIops, int replicaCount, String placementMode,
+                                                             String ipPool)
             throws UnsupportedEncodingException, DateraObject.DateraError {
 
-        DateraObject.AppInstance appInstance = new DateraObject.AppInstance(name, size, totalIops, replicaCount,
+        DateraObject.AppInstance appInstance = new DateraObject.AppInstance(name, desc, size, totalIops, replicaCount,
                 placementMode, ipPool);
         StringEntity appInstanceEntity = new StringEntity(gson.toJson(appInstance));
 
@@ -295,7 +299,7 @@ public class DateraUtil {
     }
 
     public static DateraObject.AppInstance cloneAppInstanceFromVolume(DateraObject.DateraConnection conn, String name,
-            String srcCloneName, String ipPool) throws UnsupportedEncodingException, DateraObject.DateraError {
+            String desc, String srcCloneName, String ipPool) throws UnsupportedEncodingException, DateraObject.DateraError {
         s_logger.debug("cloneAppInstanceFromVolume() called");
         DateraObject.AppInstance srcAppInstance = getAppInstance(conn, srcCloneName);
 
@@ -305,8 +309,9 @@ public class DateraUtil {
         }
 
         String srcClonePath = srcAppInstance.getVolumePath();
+        DateraObject.Volume cloneVolume = new DateraObject.Volume(srcClonePath, null);
 
-        DateraObject.AppInstance appInstanceObj = new DateraObject.AppInstance(name, srcClonePath);
+        DateraObject.AppInstance appInstanceObj = new DateraObject.AppInstance(name, desc, cloneVolume);
 
         StringEntity appInstanceEntity = new StringEntity(gson.toJson(appInstanceObj));
         DateraObject.AppInstance appInstance = createAppInstance(conn, name, appInstanceEntity);
@@ -377,7 +382,8 @@ public class DateraUtil {
 
         HttpPost createReq = new HttpPost(generateApiUrl("initiator_groups"));
 
-        DateraObject.InitiatorGroup group = new DateraObject.InitiatorGroup(name, Collections.<String>emptyList());
+        DateraObject.InitiatorGroup group = new DateraObject.InitiatorGroup(name, Collections.<DateraObject.Initiator>emptyList());
+
 
         StringEntity httpEntity = new StringEntity(gson.toJson(group));
         createReq.setEntity(httpEntity);
@@ -435,7 +441,7 @@ public class DateraUtil {
         updateInitiatorGroup(conn, initiatorPath, groupName, DateraObject.DateraOperation.REMOVE);
     }
 
-    public static Map<String, DateraObject.InitiatorGroup> getAppInstanceInitiatorGroups(
+    public static List<DateraObject.InitiatorGroup> getAppInstanceInitiatorGroups(
             DateraObject.DateraConnection conn, String appInstance) throws DateraObject.DateraError {
         HttpGet req = new HttpGet(generateApiUrl("app_instances", appInstance, "storage_instances",
                 DateraObject.DEFAULT_STORAGE_NAME, "acl_policy", "initiator_groups"));
@@ -446,8 +452,7 @@ public class DateraUtil {
             return null;
         }
 
-        Type responseType = new TypeToken<Map<String, DateraObject.InitiatorGroup>>() {
-        }.getType();
+        Type responseType = new TypeToken<List<DateraObject.InitiatorGroup>>() {}.getType();
 
         return gson.fromJson(response, responseType);
     }
@@ -461,13 +466,13 @@ public class DateraUtil {
             throw new CloudRuntimeException("Initator group " + group + " not found ");
         }
 
-        Map<String, DateraObject.InitiatorGroup> initiatorGroups = getAppInstanceInitiatorGroups(conn, appInstance);
+        List<DateraObject.InitiatorGroup> initiatorGroups = getAppInstanceInitiatorGroups(conn, appInstance);
 
         if (initiatorGroups == null) {
             throw new CloudRuntimeException("Initator group not found for appInstnace " + appInstance);
         }
 
-        for (DateraObject.InitiatorGroup ig : initiatorGroups.values()) {
+        for (DateraObject.InitiatorGroup ig : initiatorGroups) {
             if (ig.getName().equals(group)) {
                 // already assigned
                 return;
@@ -492,7 +497,7 @@ public class DateraUtil {
             throw new CloudRuntimeException("Initator groups not found for appInstnace " + appInstance);
         }
 
-        Map<String, DateraObject.InitiatorGroup> initiatorGroups = getAppInstanceInitiatorGroups(conn, appInstance);
+        List<DateraObject.InitiatorGroup> initiatorGroups = getAppInstanceInitiatorGroups(conn, appInstance);
 
         if (initiatorGroups == null) {
             throw new CloudRuntimeException("Initator group not found for appInstnace " + appInstance);
@@ -500,7 +505,7 @@ public class DateraUtil {
 
         boolean groupAssigned = false;
 
-        for (DateraObject.InitiatorGroup ig : initiatorGroups.values()) {
+        for (DateraObject.InitiatorGroup ig : initiatorGroups) {
             if (ig.getName().equals(group)) {
                 groupAssigned = true;
                 break;
@@ -550,14 +555,14 @@ public class DateraUtil {
     }
 
     public static DateraObject.AppInstance cloneAppInstanceFromSnapshot(DateraObject.DateraConnection conn,
-            String newAppInstanceName, String snapshotName)
+            String newAppInstanceName, String desc, String snapshotName)
             throws DateraObject.DateraError, UnsupportedEncodingException {
 
-        return cloneAppInstanceFromSnapshot(conn, newAppInstanceName, snapshotName, DEFAULT_IP_POOL);
+        return cloneAppInstanceFromSnapshot(conn, newAppInstanceName, desc, snapshotName, DEFAULT_IP_POOL);
     }
 
     public static DateraObject.AppInstance cloneAppInstanceFromSnapshot(DateraObject.DateraConnection conn,
-            String newAppInstanceName, String snapshotName, String ipPool)
+            String newAppInstanceName, String desc, String snapshotName, String ipPool)
             throws DateraObject.DateraError, UnsupportedEncodingException {
 
         // split the snapshot name to appInstanceName and the snapshot timestamp
@@ -578,8 +583,9 @@ public class DateraUtil {
         DateraObject.VolumeSnapshot snapshot = gson.fromJson(resp, DateraObject.VolumeSnapshot.class);
 
         String snapshotPath = snapshot.getPath();
+        DateraObject.VolumeSnapshot cloneSnapshot = new DateraObject.VolumeSnapshot(snapshotPath);
 
-        DateraObject.AppInstance appInstanceObj = new DateraObject.AppInstance(newAppInstanceName, snapshotPath);
+        DateraObject.AppInstance appInstanceObj = new DateraObject.AppInstance(newAppInstanceName, desc, cloneSnapshot);
 
         StringEntity appInstanceEntity = new StringEntity(gson.toJson(appInstanceObj));
 
@@ -630,9 +636,8 @@ public class DateraUtil {
                 generateApiUrl("app_instances", baseAppInstanceName, "storage_instances",
                         DateraObject.DEFAULT_STORAGE_NAME, "volumes", DateraObject.DEFAULT_VOLUME_NAME, "snapshots"));
 
-        String snapshotUuid = UUID.randomUUID().toString();
-        DateraObject.VolumeSnapshot volumeSnapshot = new DateraObject.VolumeSnapshot(snapshotUuid);
-        takeSnasphotReq.setEntity(new StringEntity(gson.toJson(volumeSnapshot)));
+        DateraObject.VolumeSnapshot volumeSnapshot;
+
         String snapshotResponse = executeApiRequest(conn, takeSnasphotReq);
         volumeSnapshot = gson.fromJson(snapshotResponse, DateraObject.VolumeSnapshot.class);
         String snapshotTime = volumeSnapshot.getTimestamp();
@@ -702,7 +707,14 @@ public class DateraUtil {
 
         apiReq.addHeader(HEADER_AUTH_TOKEN, authToken);
 
-        return executeHttp(conn, apiReq);
+        String resp = executeHttp(conn, apiReq);
+
+        s_logger.debug(String.format("URL: %s, params : %s", apiReq.getRequestLine().toString(), apiReq.getParams().toString()));
+        s_logger.debug(resp);
+
+        JsonParser jsonParser = new JsonParser();
+        JsonObject responseObj = (JsonObject) jsonParser.parse(resp);
+        return responseObj.get("data").toString();
     }
 
     private static String executeHttp(DateraObject.DateraConnection conn, HttpRequest request)
@@ -952,8 +964,8 @@ public class DateraUtil {
     public static boolean isInitiatorPresentInGroup(DateraObject.Initiator initiator,
             DateraObject.InitiatorGroup initiatorGroup) {
 
-        for (String memberPath : initiatorGroup.getMembers()) {
-            if (memberPath.equals(initiator.getPath())) {
+        for (DateraObject.Initiator member : initiatorGroup.getMembers() ) {
+            if (member.getPath().equals(initiator.getPath())) {
                 return true;
             }
         }
@@ -1013,7 +1025,6 @@ public class DateraUtil {
      * Generate random uuid
      *
      * @param seed
-     * @param length ( default to 8 )
      * @return String uuid
      */
     public static String generateUUID(String seed) {
